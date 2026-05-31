@@ -15,6 +15,18 @@ interface NBRBRate {
   Cur_OfficialRate: number
 }
 
+function currentSlotStart(): Date {
+  const now = new Date()
+  const slot = new Date(now)
+  slot.setHours(now.getHours() < 12 ? 0 : 12, 0, 0, 0)
+  return slot
+}
+
+export function needsRefresh(fetchedAt?: string): boolean {
+  if (!fetchedAt) return true
+  return new Date(fetchedAt) < currentSlotStart()
+}
+
 export async function fetchAndCacheRates(): Promise<void> {
   const response = await fetch(NBRB_URL)
   if (!response.ok) throw new Error(`NBRB API error: ${response.status}`)
