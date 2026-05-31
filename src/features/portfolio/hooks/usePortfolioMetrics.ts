@@ -196,29 +196,19 @@ export function usePortfolioMetrics(): PortfolioMetrics {
       })
     }
 
-    // Add future expected payments for active instruments
-    const today = new Date()
+    // Add all remaining scheduled payments for active instruments.
+    // Overdue but unpaid scheduled payments (incl. redemption) are still expected
+    // from active instruments — excluding them would make NPV always negative and
+    // break XIRR convergence when the payment window has already passed.
     const futureFlows: { date: Date; amount: number }[] = []
     for (const inst of instruments) {
       if (inst.status !== 'active' || inst.id == null) continue
       const payments = paymentsByInstrument.get(inst.id) ?? []
       for (const p of payments) {
-        if (p.status !== 'scheduled') continue
-        const payDate = new Date(p.paymentDateTo)
-        if (payDate <= today) continue
-        // Scale expected amount if it's a fraction (coupon per period expressed as fraction of principal)
-        // The generateSchedule stores couponPerPeriod as a fraction (annualRate/ppy)
-        // We need to get the actual amount — use ledger entries to infer principal
-        const entries = ledgerByInstrument.get(inst.id) ?? []
-        let principal = 0
-        for (const e of entries) {
-          if (e.type === 'purchase') principal += e.amount
-          if (e.type === 'redemption') principal -= e.amount
-        }
-        const scaledAmount = p.type === 'redemption' ? principal : p.expectedAmount * principal
-        const amtBase = await toBase(scaledAmount, inst.currency, baseCurrency)
+        if (p.status !== 'scheduled' || p.expectedAmount <= 0) continue
+        const amtBase = await toBase(p.expectedAmount, inst.currency, baseCurrency)
         if (amtBase > 0) {
-          futureFlows.push({ date: payDate, amount: amtBase })
+          futureFlows.push({ date: new Date(p.paymentDateTo), amount: amtBase })
         }
       }
     }
