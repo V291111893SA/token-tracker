@@ -417,7 +417,7 @@ export function SettingsScreen() {
       <ConfirmDialog
         open={importConfirm}
         title={t('settings.importBackup')}
-        message={t('common.confirm') + ': ' + t('settings.importBackup') + '?'}
+        message={t('settings.importBackupWarning')}
         danger
         onConfirm={() => void handleConfirmImport()}
         onCancel={() => {

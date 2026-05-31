@@ -150,12 +150,11 @@ describe('generateSchedule — GURMINA.USD.2024.01 real payments', () => {
     expect(first?.expectedAmount).toBe(6.03)
   })
 
-  it('first period (Dec) gives catch-up income when lot bought before payment date Jan 15', () => {
-    // Lot 1 bought Jan 9 — before payment date Jan 15, so platform pays Dec coupon as catch-up.
-    // 5680 × 0.11 × 2 / 366 = 3.412... → 3.41
+  it('first period (Dec) gives 0 when lots were bought after the period ended', () => {
+    // Lot 1 bought Jan 9 — after Dec 31, so no income accrued for Dec 30–31
     const records = generateSchedule(gurmina, gurminaRealLots)
     const first = records.find((r) => r.type === 'coupon' && r.paymentDateFrom === '2025-01-15')
-    expect(first?.expectedAmount).toBe(3.41)
+    expect(first?.expectedAmount).toBe(0)
   })
 
   it('last period (01.12–14.12.2026) pays in the same December', () => {

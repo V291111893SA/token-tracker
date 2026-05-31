@@ -119,7 +119,7 @@ If the lot balance changes mid-period (a lot purchased on day k), the period is 
 - Period 1 starts on `instrument.startDate`, not on 1st of the month
 - Last period ends on `instrument.endDate`; if `endDate` is mid-month, the payment is in the **same** month (not the next)
 - Days within a period before the first lot purchase have principal = 0 → income = 0 for those days
-- If a lot is purchased **after** the accrual period but **before `paymentDateFrom`**, the platform pays full catch-up income for that period (whoever holds tokens at payment date receives the coupon)
+- Lots purchased **after** the accrual period end do not contribute — income accrues only while the lot is held
 
 **Verified against real GURMINA.USD.2024.01 payments** (see `docs/examples/gurnima-algorithm.md`):
 | Payment date | Period | Days | KDG | Principal | Amount |

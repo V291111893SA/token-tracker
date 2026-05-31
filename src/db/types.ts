@@ -14,6 +14,7 @@ export interface Instrument {
   platform: string
   currency: Currency
   couponRate: number
+  tokenPrice?: number
   startDate: string
   endDate: string
   paymentFrequency: PaymentFrequency

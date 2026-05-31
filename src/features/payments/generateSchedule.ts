@@ -53,47 +53,33 @@ function calcPeriodIncome(principal: number, rate: number, start: Date, end: Dat
 }
 
 /**
+/**
  * Calculates coupon income for an accrual period using the White Paper formula:
  *   СПД = Σ (СТВi × СД/100 × 1/КДГ)  for each day i in [periodStart, periodEnd]
  *
  * Where СТВi (amount invested on day i) changes when new purchase lots are added.
- *
- * Two kinds of lots are eligible:
- *  - Lots purchased during [periodStart, periodEnd]: prorated from purchase date (breakpoints)
- *  - Lots purchased after periodEnd but before paymentCutoff: "catch-up" lots — the platform
- *    pays the full period income to whoever holds tokens at the payment date, so these
- *    contribute as if they were purchased on periodStart.
+ * Lots purchased after periodEnd are not eligible — income accrues only while held.
  */
 function calcIncomeForPeriod(
   lots: PurchaseLot[],
   rate: number,
   periodStart: Date,
   periodEnd: Date,
-  paymentCutoff: Date,
 ): number {
   const periodStartISO = toISO(periodStart)
   const periodEndISO = toISO(periodEnd)
-  const paymentCutoffISO = toISO(paymentCutoff)
 
-  // All lots whose purchase date is on or before the payment cutoff
+  // Only lots purchased on or before the period end
   const eligible = [...lots]
-    .filter((l) => l.purchaseDate <= paymentCutoffISO)
+    .filter((l) => l.purchaseDate <= periodEndISO)
     .sort((a, b) => a.purchaseDate.localeCompare(b.purchaseDate))
 
   if (eligible.length === 0) return 0
 
-  // Pre-period lots: active from the start of the period
+  // Pre-period lots: active for the entire accrual period
   const prePrincipal = eligible
     .filter((l) => l.purchaseDate <= periodStartISO)
     .reduce((sum, l) => sum + l.totalCost, 0)
-
-  // Catch-up lots: purchased after accrual end but before payment — full period income
-  const catchUpPrincipal = eligible
-    .filter((l) => l.purchaseDate > periodEndISO)
-    .reduce((sum, l) => sum + l.totalCost, 0)
-
-  // Base principal is active for the ENTIRE accrual period
-  const basePrincipal = prePrincipal + catchUpPrincipal
 
   // Within-period lots create sub-period breakpoints (prorated from purchase date)
   const withinPeriodLots = eligible.filter(
@@ -101,8 +87,8 @@ function calcIncomeForPeriod(
   )
 
   if (withinPeriodLots.length === 0) {
-    if (basePrincipal === 0) return 0
-    return calcPeriodIncome(basePrincipal, rate, periodStart, periodEnd)
+    if (prePrincipal === 0) return 0
+    return calcPeriodIncome(prePrincipal, rate, periodStart, periodEnd)
   }
 
   const breakpointISOs = [...new Set(withinPeriodLots.map((l) => l.purchaseDate))].sort()
@@ -120,7 +106,7 @@ function calcIncomeForPeriod(
         .filter((l) => l.purchaseDate <= subStartISO)
         .reduce((sum, l) => sum + l.totalCost, 0)
 
-      const subPrincipal = basePrincipal + withinSub
+      const subPrincipal = prePrincipal + withinSub
       if (subPrincipal > 0) {
         totalIncome += calcPeriodIncome(subPrincipal, rate, new Date(subStartISO), subEndDate)
       }
@@ -134,7 +120,7 @@ function calcIncomeForPeriod(
     .filter((l) => l.purchaseDate <= subStartISO)
     .reduce((sum, l) => sum + l.totalCost, 0)
 
-  const finalPrincipal = basePrincipal + withinFinal
+  const finalPrincipal = prePrincipal + withinFinal
   if (finalPrincipal > 0) {
     totalIncome += calcPeriodIncome(finalPrincipal, rate, new Date(subStartISO), periodEnd)
   }
@@ -231,15 +217,7 @@ export function generateSchedule(
       paymentDayTo,
     )
 
-    // Pass paymentDateFrom as the cutoff: lots purchased before the payment date are eligible
-    // for catch-up income on past accrual periods they missed.
-    const rawIncome = calcIncomeForPeriod(
-      lots,
-      couponRate,
-      accrualStart,
-      accrualEnd,
-      new Date(payFrom),
-    )
+    const rawIncome = calcIncomeForPeriod(lots, couponRate, accrualStart, accrualEnd)
     const income = roundHalfUp(rawIncome, 2)
 
     records.push({

@@ -6,6 +6,7 @@ const extractionSchema = z.object({
   name: z.string().nullable(),
   currency: z.string().nullable(),
   couponRate: z.number().nullable(),
+  tokenPrice: z.number().nullable(),
   startDate: z.string().nullable(),
   endDate: z.string().nullable(),
   paymentFrequency: z.string().nullable(),

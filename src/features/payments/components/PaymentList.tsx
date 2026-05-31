@@ -73,7 +73,7 @@ export function PaymentList({ instrumentId }: Props) {
     setMarkPaidState({
       payment,
       actualAmount: String(payment.expectedAmount),
-      paidAt: new Date().toISOString().slice(0, 10),
+      paidAt: payment.paymentDateFrom,
     })
     setError(null)
   }

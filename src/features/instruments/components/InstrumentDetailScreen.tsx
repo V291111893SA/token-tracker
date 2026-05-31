@@ -21,7 +21,7 @@ import { PurchaseLotList } from '@/features/purchaseLots/components/PurchaseLotL
 import { PaymentList } from '@/features/payments/components/PaymentList'
 import { db } from '@/db/db'
 import { formatDate, formatCurrency } from '@/shared/utils/format'
-import type { InstrumentStatus } from '@/db/types'
+import type { InstrumentStatus, PaymentRecord, PaymentStatus } from '@/db/types'
 
 function statusBadgeVariant(status: InstrumentStatus): 'green' | 'blue' | 'red' | 'gray' {
   if (status === 'active') return 'green'
@@ -61,6 +61,8 @@ export default function InstrumentDetailScreen() {
   const instrument = useInstrument(instrumentId)
 
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [maturedConfirmOpen, setMaturedConfirmOpen] = useState(false)
+  const [maturedPayments, setMaturedPayments] = useState<PaymentRecord[]>([])
   const [defaultModalOpen, setDefaultModalOpen] = useState(false)
   const [defaultForm, setDefaultForm] = useState<DefaultFormState>(emptyDefaultForm)
 
@@ -98,10 +100,39 @@ export default function InstrumentDetailScreen() {
     navigate('/instruments')
   }
 
-  async function handleMarkMatured() {
+  async function openMarkMatured() {
+    if (instrument?.id == null) return
+    const payments = await db.paymentRecords
+      .where('instrumentId')
+      .equals(instrument.id)
+      .filter((p) => p.status === 'scheduled' && p.expectedAmount > 0)
+      .toArray()
+    setMaturedPayments(payments)
+    setMaturedConfirmOpen(true)
+  }
+
+  async function handleConfirmMatured() {
     if (instrument?.id == null) return
     const now = new Date().toISOString()
-    await db.instruments.update(instrument.id, { status: 'matured', updatedAt: now })
+    await db.transaction('rw', [db.instruments, db.paymentRecords, db.ledgerEntries], async () => {
+      await db.instruments.update(instrument.id!, { status: 'matured', updatedAt: now })
+      for (const p of maturedPayments) {
+        if (p.id == null) continue
+        await db.paymentRecords.update(p.id, {
+          status: 'paid' as PaymentStatus,
+          actualAmount: p.expectedAmount,
+          paidAt: p.paymentDateFrom,
+        })
+        await db.ledgerEntries.add({
+          instrumentId: instrument.id!,
+          date: p.paymentDateFrom,
+          type: p.type,
+          amount: p.expectedAmount,
+          createdAt: now,
+        })
+      }
+    })
+    setMaturedConfirmOpen(false)
   }
 
   async function handleMarkSold() {
@@ -134,7 +165,24 @@ export default function InstrumentDetailScreen() {
     setDefaultForm((prev) => ({ ...prev, [field]: value }))
   }
 
+  function openEditDefault() {
+    if (!instrument) return
+    setDefaultForm({
+      defaultDate: instrument.defaultDate ?? '',
+      defaultOutstandingPrincipal:
+        instrument.defaultOutstandingPrincipal != null
+          ? String(instrument.defaultOutstandingPrincipal)
+          : '',
+      expectedRecoveryRate:
+        instrument.expectedRecoveryRate != null ? String(instrument.expectedRecoveryRate) : '',
+      expectedRecoveryDate: instrument.expectedRecoveryDate ?? '',
+      defaultNotes: instrument.defaultNotes ?? '',
+    })
+    setDefaultModalOpen(true)
+  }
+
   const isActive = instrument.status === 'active'
+  const isDefaulted = instrument.status === 'defaulted'
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-6">
@@ -178,7 +226,7 @@ export default function InstrumentDetailScreen() {
               variant="secondary"
               size="sm"
               icon={<BadgeCheck className="size-4" />}
-              onClick={handleMarkMatured}
+              onClick={() => void openMarkMatured()}
             >
               {t('instrument.markMatured')}
             </Button>
@@ -204,6 +252,17 @@ export default function InstrumentDetailScreen() {
           </>
         )}
 
+        {isDefaulted && (
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={<Pencil className="size-4" />}
+            onClick={openEditDefault}
+          >
+            {t('instrument.editDefault')}
+          </Button>
+        )}
+
         <Button
           variant="danger"
           size="sm"
@@ -217,12 +276,18 @@ export default function InstrumentDetailScreen() {
       {/* Details card */}
       <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
         <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
-          {t('common.actions')}
+          {t('instrument.info')}
         </h2>
         <dl className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm sm:grid-cols-3">
           <DetailItem label={t('instrument.platform')} value={instrument.platform} />
           <DetailItem label={t('instrument.currency')} value={instrument.currency} />
           <DetailItem label={t('instrument.couponRate')} value={`${instrument.couponRate}%`} />
+          {instrument.tokenPrice != null && (
+            <DetailItem
+              label={t('instrument.tokenPrice')}
+              value={formatCurrency(instrument.tokenPrice, instrument.currency)}
+            />
+          )}
           <DetailItem label={t('instrument.startDate')} value={formatDate(instrument.startDate)} />
           <DetailItem label={t('instrument.endDate')} value={formatDate(instrument.endDate)} />
           <DetailItem
@@ -264,11 +329,14 @@ export default function InstrumentDetailScreen() {
             </p>
             <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
               {instrument.defaultDate && (
-                <DetailItem label="Default date" value={formatDate(instrument.defaultDate)} />
+                <DetailItem
+                  label={t('instrument.defaultDate')}
+                  value={formatDate(instrument.defaultDate)}
+                />
               )}
               {instrument.defaultOutstandingPrincipal != null && (
                 <DetailItem
-                  label="Outstanding principal"
+                  label={t('instrument.defaultOutstandingPrincipal')}
                   value={formatCurrency(
                     instrument.defaultOutstandingPrincipal,
                     instrument.currency,
@@ -277,19 +345,21 @@ export default function InstrumentDetailScreen() {
               )}
               {instrument.expectedRecoveryRate != null && (
                 <DetailItem
-                  label="Expected recovery"
+                  label={t('instrument.expectedRecoveryRate')}
                   value={`${instrument.expectedRecoveryRate}%`}
                 />
               )}
               {instrument.expectedRecoveryDate && (
                 <DetailItem
-                  label="Recovery date"
+                  label={t('instrument.expectedRecoveryDate')}
                   value={formatDate(instrument.expectedRecoveryDate)}
                 />
               )}
               {instrument.defaultNotes && (
                 <div className="col-span-2">
-                  <dt className="text-gray-500 dark:text-gray-400">Notes</dt>
+                  <dt className="text-gray-500 dark:text-gray-400">
+                    {t('instrument.defaultNotes')}
+                  </dt>
                   <dd className="text-red-800 dark:text-red-300">{instrument.defaultNotes}</dd>
                 </div>
               )}
@@ -307,7 +377,47 @@ export default function InstrumentDetailScreen() {
       </div>
 
       {/* Purchase lots */}
-      <PurchaseLotList instrumentId={instrument.id!} currency={instrument.currency} />
+      <PurchaseLotList
+        instrumentId={instrument.id!}
+        currency={instrument.currency}
+        tokenPrice={instrument.tokenPrice}
+      />
+
+      {/* Matured confirm modal */}
+      <Modal
+        open={maturedConfirmOpen}
+        onClose={() => setMaturedConfirmOpen(false)}
+        title={t('instrument.markMatured')}
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setMaturedConfirmOpen(false)}>
+              {t('common.cancel')}
+            </Button>
+            <Button variant="primary" onClick={() => void handleConfirmMatured()}>
+              {t('common.confirm')}
+            </Button>
+          </>
+        }
+      >
+        <div className="flex flex-col gap-2 text-sm text-gray-700 dark:text-gray-300">
+          <p>{t('instrument.markMaturedWarning')}</p>
+          {maturedPayments.length > 0 ? (
+            <p>
+              {t('instrument.markMaturedPaymentsInfo', {
+                count: maturedPayments.length,
+                total: formatCurrency(
+                  maturedPayments.reduce((s, p) => s + p.expectedAmount, 0),
+                  instrument.currency,
+                ),
+              })}
+            </p>
+          ) : (
+            <p className="text-gray-500 dark:text-gray-400">
+              {t('instrument.markMaturedNoPayments')}
+            </p>
+          )}
+        </div>
+      </Modal>
 
       {/* Delete confirm */}
       <ConfirmDialog
@@ -337,13 +447,13 @@ export default function InstrumentDetailScreen() {
       >
         <div className="flex flex-col gap-4">
           <Input
-            label="Default date"
+            label={t('instrument.defaultDate')}
             type="date"
             value={defaultForm.defaultDate}
             onChange={(e) => setDefaultField('defaultDate', e.target.value)}
           />
           <Input
-            label="Outstanding principal"
+            label={t('instrument.defaultOutstandingPrincipal')}
             type="number"
             min="0"
             step="any"
@@ -351,7 +461,7 @@ export default function InstrumentDetailScreen() {
             onChange={(e) => setDefaultField('defaultOutstandingPrincipal', e.target.value)}
           />
           <Input
-            label="Expected recovery rate (%)"
+            label={t('instrument.expectedRecoveryRate')}
             type="number"
             min="0"
             max="100"
@@ -360,13 +470,13 @@ export default function InstrumentDetailScreen() {
             onChange={(e) => setDefaultField('expectedRecoveryRate', e.target.value)}
           />
           <Input
-            label="Expected recovery date"
+            label={t('instrument.expectedRecoveryDate')}
             type="date"
             value={defaultForm.expectedRecoveryDate}
             onChange={(e) => setDefaultField('expectedRecoveryDate', e.target.value)}
           />
           <Input
-            label="Notes"
+            label={t('instrument.defaultNotes')}
             type="text"
             value={defaultForm.defaultNotes}
             onChange={(e) => setDefaultField('defaultNotes', e.target.value)}

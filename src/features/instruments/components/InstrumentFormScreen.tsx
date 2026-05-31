@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { ArrowLeft, Save, ScanText, Sparkles } from 'lucide-react'
+import { ArrowLeft, Save, ScanText } from 'lucide-react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Button } from '@/shared/components/Button'
 import { Input } from '@/shared/components/Input'
@@ -18,6 +18,7 @@ interface FormState {
   platform: string
   currency: Currency
   couponRate: string
+  tokenPrice: string
   startDate: string
   endDate: string
   paymentFrequency: PaymentFrequency
@@ -43,6 +44,7 @@ const defaultForm: FormState = {
   platform: '',
   currency: 'BYN',
   couponRate: '',
+  tokenPrice: '',
   startDate: '',
   endDate: '',
   paymentFrequency: 'monthly',
@@ -84,6 +86,7 @@ function instrumentToForm(instrument: Instrument): FormState {
     platform: instrument.platform,
     currency: instrument.currency,
     couponRate: String(instrument.couponRate),
+    tokenPrice: instrument.tokenPrice != null ? String(instrument.tokenPrice) : '',
     startDate: instrument.startDate,
     endDate: instrument.endDate,
     paymentFrequency: instrument.paymentFrequency,
@@ -165,6 +168,7 @@ export default function InstrumentFormScreen() {
         platform: extracted.platform ?? prev.platform,
         currency: (extracted.currency as Currency) ?? prev.currency,
         couponRate: extracted.couponRate != null ? String(extracted.couponRate) : prev.couponRate,
+        tokenPrice: extracted.tokenPrice != null ? String(extracted.tokenPrice) : prev.tokenPrice,
         startDate: extracted.startDate ?? prev.startDate,
         endDate: extracted.endDate ?? prev.endDate,
         paymentFrequency: (extracted.paymentFrequency as PaymentFrequency) ?? prev.paymentFrequency,
@@ -196,6 +200,7 @@ export default function InstrumentFormScreen() {
         platform: form.platform.trim(),
         currency: form.currency,
         couponRate: Number(form.couponRate),
+        tokenPrice: form.tokenPrice ? Number(form.tokenPrice) : undefined,
         startDate: form.startDate,
         endDate: form.endDate,
         paymentFrequency: form.paymentFrequency,
@@ -281,16 +286,7 @@ export default function InstrumentFormScreen() {
             <Button
               variant="secondary"
               size="sm"
-              icon={
-                parsing ? (
-                  <Spinner className="size-4" />
-                ) : (
-                  <span className="flex items-center gap-0.5">
-                    <ScanText className="size-4" />
-                    <Sparkles className="size-3" />
-                  </span>
-                )
-              }
+              icon={parsing ? <Spinner className="size-4" /> : <ScanText className="size-4" />}
               loading={parsing}
               onClick={() => fileInputRef.current?.click()}
             >
@@ -338,6 +334,16 @@ export default function InstrumentFormScreen() {
           />
 
           <Input
+            label={t('instrument.tokenPrice')}
+            type="number"
+            min="0"
+            step="any"
+            value={form.tokenPrice}
+            onChange={(e) => set('tokenPrice', e.target.value)}
+            placeholder="e.g. 20"
+          />
+
+          <Input
             label={t('instrument.startDate')}
             type="date"
             value={form.startDate}
@@ -372,29 +378,34 @@ export default function InstrumentFormScreen() {
             />
           )}
 
-          <Input
-            label={t('instrument.paymentDayFrom')}
-            type="number"
-            min="1"
-            max="31"
-            step="1"
-            value={form.paymentDayFrom}
-            onChange={(e) => set('paymentDayFrom', e.target.value)}
-            error={errors.paymentDayFrom}
-            placeholder="1–31"
-          />
-
-          <Input
-            label={t('instrument.paymentDayTo')}
-            type="number"
-            min="1"
-            max="31"
-            step="1"
-            value={form.paymentDayTo}
-            onChange={(e) => set('paymentDayTo', e.target.value)}
-            error={errors.paymentDayTo}
-            placeholder="1–31"
-          />
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <Input
+                label={t('instrument.paymentDayFrom')}
+                type="number"
+                min="1"
+                max="31"
+                step="1"
+                value={form.paymentDayFrom}
+                onChange={(e) => set('paymentDayFrom', e.target.value)}
+                error={errors.paymentDayFrom}
+                placeholder="1–31"
+              />
+            </div>
+            <div className="flex-1">
+              <Input
+                label={t('instrument.paymentDayTo')}
+                type="number"
+                min="1"
+                max="31"
+                step="1"
+                value={form.paymentDayTo}
+                onChange={(e) => set('paymentDayTo', e.target.value)}
+                error={errors.paymentDayTo}
+                placeholder="1–31"
+              />
+            </div>
+          </div>
 
           <div className="sm:col-span-2">
             <Input

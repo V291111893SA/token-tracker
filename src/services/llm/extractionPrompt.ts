@@ -2,6 +2,7 @@ export interface ExtractedInstrument {
   name: string | null
   currency: string | null
   couponRate: number | null
+  tokenPrice: number | null
   startDate: string | null
   endDate: string | null
   paymentFrequency: string | null
@@ -19,6 +20,7 @@ Fields:
 - name: string — full name of the bond or token issue
 - currency: string — one of "BYN", "USD", "EUR"
 - couponRate: number — annual coupon rate as a decimal percentage (e.g. 18.5 for 18.5%)
+- tokenPrice: number — nominal (face) price of one token in the issue currency (e.g. 20 for 20 USD)
 - startDate: string — circulation start date in ISO format YYYY-MM-DD
 - endDate: string — maturity/redemption date in ISO format YYYY-MM-DD
 - paymentFrequency: string — one of "monthly", "quarterly", "custom"

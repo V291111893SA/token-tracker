@@ -47,10 +47,9 @@ const PURCHASE_LOTS = [
   },
 ]
 
-// Subset of payment records produced by the fixed algorithm.
+// Subset of payment records produced by the algorithm.
 //
-// Period 0  (Dec 30–31, 2024): 3.41 — catch-up: Lot 1 bought Jan 9 before payment Jan 15
-//   5680 × 0.11 × 2 / 366 = 3.41
+// Period 0  (Dec 30–31, 2024): 0 — Lot 1 bought Jan 9, after period end → no income
 // Period 1  (Jan 1–31, 2025):  47.25 — weighted by lot purchase dates, pays Feb 15 2025
 //   Lot 1 active Jan 9–25   (17 days):      5680 × 0.11 × 17 / 365 = 29.10
 //   Lot 1+2 active Jan 26–31 (6 days): 10 040 × 0.11 ×  6 / 365 = 18.15
@@ -66,8 +65,7 @@ const PAYMENT_RECORDS = [
     type: 'coupon',
     paymentDateFrom: '2025-01-15',
     paymentDateTo: '2025-01-18',
-    // Lot 1 bought Jan 9 — before payment Jan 15 → catch-up: 5680 × 0.11 × 2 / 366 = 3.41
-    expectedAmount: 3.41,
+    expectedAmount: 0,
     status: 'scheduled',
   },
   {
@@ -166,12 +164,9 @@ test.beforeEach(async ({ page }) => {
   await page.waitForTimeout(800)
 })
 
-test('payment schedule shows catch-up December, weighted January, and later-period amounts', async ({
-  page,
-}) => {
+test('payment schedule shows weighted January and later-period amounts', async ({ page }) => {
   const pageText = await page.locator('body').innerText()
   // ru locale uses comma as decimal separator
-  expect(pageText).toContain('3,41') // December 2024 — catch-up (Lot 1 bought before Jan 15)
   expect(pageText).toContain('47,25') // January 2025 — weighted by lot purchase dates
   expect(pageText).toContain('84,72') // February 2025 and February 2026
   expect(pageText).toContain('93,80') // March 2026

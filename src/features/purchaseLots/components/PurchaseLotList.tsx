@@ -15,6 +15,7 @@ import type { Currency, PurchaseLot } from '@/db/types'
 interface Props {
   instrumentId: number
   currency: Currency
+  tokenPrice?: number
 }
 
 interface LotFormState {
@@ -47,7 +48,7 @@ function validateForm(form: LotFormState): FormErrors {
   return errors
 }
 
-export function PurchaseLotList({ instrumentId, currency }: Props) {
+export function PurchaseLotList({ instrumentId, currency, tokenPrice }: Props) {
   const { t } = useTranslation()
   const lots = usePurchaseLots(instrumentId)
 
@@ -61,7 +62,7 @@ export function PurchaseLotList({ instrumentId, currency }: Props) {
 
   function openAdd() {
     setEditingLot(null)
-    setForm(emptyForm)
+    setForm({ ...emptyForm, pricePerToken: tokenPrice != null ? String(tokenPrice) : '' })
     setErrors({})
     setModalOpen(true)
   }

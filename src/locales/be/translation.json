@@ -37,6 +37,8 @@
     "platform": "Платформа",
     "currency": "Валюта",
     "couponRate": "Стаўка купона, % гадавых",
+    "info": "Iнфармацыя",
+    "tokenPrice": "Кошт аднаго токена",
     "startDate": "Дата пачатку зваротку",
     "endDate": "Дата пагашэння",
     "paymentFrequency": "Перыядычнасць выплат",
@@ -44,7 +46,7 @@
     "paymentDayTo": "Дзень выплаты (да)",
     "whitepaperUrl": "Спасылка на White Paper",
     "status": "Статус",
-    "parseWhitepaper": "Выняць з White Paper (PDF)",
+    "parseWhitepaper": "Атрымаць з White Paper (PDF)",
     "frequency": {
       "monthly": "Штомесяц",
       "quarterly": "Штоквартал",
@@ -55,7 +57,16 @@
     "status_defaulted": "Дэфолт",
     "status_sold": "Прададзены",
     "markMatured": "Адзначыць як пагашаны",
+    "markMaturedWarning": "Інструмент будзе адзначаны як пагашаны.",
+    "markMaturedPaymentsInfo": "Дадаткова {{count}} запланаваных выплат на суму {{total}} будуць аўтаматычна адзначаны як выплачаныя.",
+    "markMaturedNoPayments": "Запланаваных ненулявых выплат няма.",
+    "editDefault": "Рэдагаваць дэфолт",
     "markDefaulted": "Адзначыць дэфолт",
+    "defaultDate": "Дата дэфолту",
+    "defaultOutstandingPrincipal": "Непагашаны асноўны доўг",
+    "expectedRecoveryRate": "Чаканы працэнт вяртання (%)",
+    "expectedRecoveryDate": "Чаканая дата вяртання",
+    "defaultNotes": "Заўвагі",
     "markSold": "Адзначыць як прададзены",
     "empty": "Няма інструментаў. Дадайце першы.",
     "deleteConfirm": "Выдаліць інструмент «{{name}}»? Гэта таксама выдаліць усе звязаныя лоты, выплаты і запісы журнала."
@@ -143,6 +154,7 @@
     "llmTestFail": "Памылка падключэння",
     "backup": "Рэзервовая копія",
     "exportBackup": "Экспартаваць",
-    "importBackup": "Аднавіць"
+    "importBackup": "Аднавіць",
+    "importBackupWarning": "Усе бягучыя даныя будуць выдалены і заменены данымі з файла. Гэта дзеянне немагчыма адмяніць."
   }
 }
