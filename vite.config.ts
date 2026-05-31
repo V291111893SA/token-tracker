@@ -2,12 +2,14 @@ import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
+import basicSsl from '@vitejs/plugin-basic-ssl'
 import path from 'path'
 
 export default defineConfig({
   plugins: [
     tailwindcss(),
     react(),
+    basicSsl(),
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
@@ -30,6 +32,7 @@ export default defineConfig({
           },
         ],
       },
+      devOptions: { enabled: true },
     }),
   ],
   resolve: {
