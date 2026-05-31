@@ -36,29 +36,29 @@ The application must continue operating offline using cached data.
 
 # Technical Stack
 
-| Concern | Choice |
-|----------|----------|
-| App Type | PWA |
-| Framework | React |
-| Styling | Tailwind CSS |
-| Storage | IndexedDB |
-| Backup Format | JSON |
+| Concern       | Choice       |
+| ------------- | ------------ |
+| App Type      | PWA          |
+| Framework     | React        |
+| Styling       | Tailwind CSS |
+| Storage       | IndexedDB    |
+| Backup Format | JSON         |
 
 ---
 
 # Domain Glossary
 
-| Term | Description |
-|--------|--------|
-| Instrument | Bond / token issuer |
-| Purchase Lot | Individual purchase transaction |
-| Cash Flow Ledger | Source of truth for all cash movements |
-| Coupon Payment | Interest payment |
-| Redemption | Principal repayment at maturity |
-| Recovery | Repayment after default |
-| Default | Issuer default event |
-| Outstanding Principal | Unrecovered principal amount |
-| XIRR | Effective annual return |
+| Term                  | Description                            |
+| --------------------- | -------------------------------------- |
+| Instrument            | Bond / token issuer                    |
+| Purchase Lot          | Individual purchase transaction        |
+| Cash Flow Ledger      | Source of truth for all cash movements |
+| Coupon Payment        | Interest payment                       |
+| Redemption            | Principal repayment at maturity        |
+| Recovery              | Repayment after default                |
+| Default               | Issuer default event                   |
+| Outstanding Principal | Unrecovered principal amount           |
+| XIRR                  | Effective annual return                |
 
 ---
 
@@ -66,19 +66,19 @@ The application must continue operating offline using cached data.
 
 ## Instrument
 
-| Field | Description |
-|---------|---------|
-| Name | Token/Bond name |
-| Whitepaper URL | Documentation |
-| Platform | Finstore / Fainex / Bynex |
-| Currency | BYN / USD / EUR |
-| Coupon Rate | Annual rate |
-| Start Date | Circulation start |
-| End Date | Maturity date |
-| Payment Frequency | Monthly / Quarterly / Custom |
-| Payment Day (from) | First day of the expected payment window (e.g. 10) |
-| Payment Day (to) | Last day of the expected payment window (e.g. 15); equal to "from" for a fixed day |
-| Status | Active / Matured / Defaulted / Sold |
+| Field              | Description                                                                        |
+| ------------------ | ---------------------------------------------------------------------------------- |
+| Name               | Token/Bond name                                                                    |
+| Whitepaper URL     | Documentation                                                                      |
+| Platform           | Finstore / Fainex / Bynex                                                          |
+| Currency           | BYN / USD / EUR                                                                    |
+| Coupon Rate        | Annual rate                                                                        |
+| Start Date         | Circulation start                                                                  |
+| End Date           | Maturity date                                                                      |
+| Payment Frequency  | Monthly / Quarterly / Custom                                                       |
+| Payment Day (from) | First day of the expected payment window (e.g. 10)                                 |
+| Payment Day (to)   | Last day of the expected payment window (e.g. 15); equal to "from" for a fixed day |
+| Status             | Active / Matured / Defaulted / Sold                                                |
 
 ---
 
@@ -87,18 +87,21 @@ The application must continue operating offline using cached data.
 Payment schedules are **auto-generated** from the instrument fields — no manual entry of individual dates.
 
 ### Inputs
+
 - Start Date
 - End Date
 - Payment Frequency (Monthly / Quarterly / Custom interval)
 - Payment Day from / Payment Day to
 
 ### Logic
+
 1. Starting from Start Date, advance by the frequency interval to get each period's month.
 2. Within that month, the expected payment window is `[Payment Day from … Payment Day to]`.
 3. If Payment Day from == Payment Day to, the payment is expected on that exact day.
 4. The last period always coincides with End Date (final coupon + redemption).
 
 ### Example
+
 > Frequency: Monthly, Payment Day: 10–15, Start: 2024-01-01, End: 2025-01-01
 >
 > Generated windows: Feb 10–15, Mar 10–15, … Jan 10–15 2025 (final)
@@ -109,14 +112,14 @@ The generated schedule populates the Payment Records table with Status = **Sched
 
 ## Purchase Lot
 
-| Field | Description |
-|---------|---------|
-| Instrument ID | Reference |
-| Purchase Date | Purchase date |
-| Quantity | Purchased amount |
-| Price Per Token | Purchase price |
-| Total Cost | Calculated |
-| Notes | Optional |
+| Field           | Description      |
+| --------------- | ---------------- |
+| Instrument ID   | Reference        |
+| Purchase Date   | Purchase date    |
+| Quantity        | Purchased amount |
+| Price Per Token | Purchase price   |
+| Total Cost      | Calculated       |
+| Notes           | Optional         |
 
 Supports multiple purchases of the same instrument.
 
@@ -124,26 +127,26 @@ Supports multiple purchases of the same instrument.
 
 ## Payment Record
 
-| Field | Description |
-|---------|---------|
-| Instrument ID | Reference |
-| Payment Date | Date |
-| Payment Type | Coupon / Redemption / Recovery |
-| Expected Amount | Planned amount |
-| Actual Amount | Received amount |
-| Status | Scheduled / Paid / Missed |
+| Field           | Description                    |
+| --------------- | ------------------------------ |
+| Instrument ID   | Reference                      |
+| Payment Date    | Date                           |
+| Payment Type    | Coupon / Redemption / Recovery |
+| Expected Amount | Planned amount                 |
+| Actual Amount   | Received amount                |
+| Status          | Scheduled / Paid / Missed      |
 
 ---
 
 ## Default Information
 
-| Field | Description |
-|---------|---------|
-| Default Date | Date of default |
-| Outstanding Principal | Remaining principal |
-| Expected Recovery Rate | 0–100% |
-| Expected Recovery Date | Optional |
-| Notes | Optional |
+| Field                  | Description         |
+| ---------------------- | ------------------- |
+| Default Date           | Date of default     |
+| Outstanding Principal  | Remaining principal |
+| Expected Recovery Rate | 0–100%              |
+| Expected Recovery Date | Optional            |
+| Notes                  | Optional            |
 
 ---
 
@@ -161,12 +164,12 @@ The Cash Flow Ledger is the single source of truth for all portfolio calculation
 
 Example:
 
-| Date | Type | Instrument | Amount |
-|--------|--------|--------|--------|
-| 2024-01-01 | Purchase | Bond A | -1000 |
-| 2024-06-01 | Coupon | Bond A | +50 |
-| 2025-01-01 | Coupon | Bond A | +50 |
-| 2026-01-01 | Redemption | Bond A | +1000 |
+| Date       | Type       | Instrument | Amount |
+| ---------- | ---------- | ---------- | ------ |
+| 2024-01-01 | Purchase   | Bond A     | -1000  |
+| 2024-06-01 | Coupon     | Bond A     | +50    |
+| 2025-01-01 | Coupon     | Bond A     | +50    |
+| 2026-01-01 | Redemption | Bond A     | +1000  |
 
 All analytics, profits, losses and XIRR calculations must be derived from the ledger.
 
@@ -232,26 +235,35 @@ Requirements:
 
 ## 4. Portfolio Overview
 
-Display:
+### Key Metric Cards
 
-- Total Capital Invested
 - Active Principal
-- Repaid Principal
 - Defaulted Principal
-- Current Portfolio Value
-- Portfolio XIRR
-- Realized Profit/Loss
-- Unrealized Profit/Loss
+- Portfolio XIRR (annualised)
+- Projected Final P&L (last value from the cumulative P&L chart)
 
-### Risk Metrics
+### Cumulative P&L Chart
+
+A time-series area chart showing cumulative net profit/loss over time:
+
+- **Historical** (solid line): coupons received + recoveries − default losses, month by month up to today
+- **Projected** (dashed line): expected future coupons from active instruments + expected recoveries from defaulted instruments
+- Green fill above zero, red fill below zero
+- Today's month is the seam point connecting historical and projected series
+
+### Instrument Counts
 
 - Number of Active Instruments
 - Number of Matured Instruments
 - Number of Defaulted Instruments
 - Number of Sold Instruments
+
+### Risk Metrics (shown only when defaults exist)
+
 - Recovered Principal
 - Recovery Ratio
 - Largest Single Loss
+- XIRR Scenario Analysis (0% / 25% / 50% / 75% / 100% recovery of defaulted principal)
 
 ## 5. Payments Calendar
 
@@ -281,11 +293,13 @@ Supported languages:
 ## 9. Settings
 
 ### General
+
 - Base currency selection (BYN / USD / EUR)
 - Language selection (Russian / Belarusian)
 - Theme selection (Light / Dark / System)
 
 ### LLM Integration
+
 - API Base URL (OpenAI-compatible endpoint, e.g. `https://api.openai.com/v1`)
 - API Key
 - Model name (e.g. `gpt-4o`, `gpt-4.1-mini`)
@@ -379,13 +393,13 @@ XIRR is calculated from the complete ledger cash flow history.
 
 Recovery scenarios:
 
-| Scenario | Recovery |
-|----------|----------|
-| Worst Case | 0% |
-| Conservative | 25% |
-| Moderate | 50% |
-| Optimistic | 75% |
-| Full Recovery | 100% |
+| Scenario      | Recovery |
+| ------------- | -------- |
+| Worst Case    | 0%       |
+| Conservative  | 25%      |
+| Moderate      | 50%      |
+| Optimistic    | 75%      |
+| Full Recovery | 100%     |
 
 The application recalculates portfolio XIRR for each scenario.
 

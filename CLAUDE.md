@@ -143,9 +143,23 @@ Passes the full `PurchaseLot[]` list to `generateSchedule`; per-period principal
 
 ### XIRR (`src/services/xirr/xirr.ts`)
 
-Newton-Raphson solver for internal rate of return on irregular cash flows.
-Used in PortfolioScreen for portfolio-level performance.
-Inputs: ledger entries (historical) + future scheduled payments projected to today.
+Newton-Raphson solver for internal rate of return on irregular cash flows. Tries multiple starting points (0.1, 0.0, 0.5, −0.1, 2.0) and clamps rate to `max(-0.9999, next)` to prevent NaN from `Math.pow(negative_base, fractional_exponent)`.
+
+Used in `usePortfolioMetrics` for:
+
+- **Portfolio XIRR**: ledger entries (signed correctly — purchases negative, income positive) + all remaining scheduled payments for active instruments (including overdue ones).
+- **Scenario XIRR**: same flows + hypothetical recovery amounts for defaulted instruments at 0/25/50/75/100% of outstanding principal.
+
+### Cash Flow Timeline (`src/features/portfolio/hooks/useCashFlowTimeline.ts`)
+
+Builds monthly cumulative P&L data for the portfolio chart. P&L model:
+
+- **Income**: coupon and recovery ledger entries
+- **Losses**: `−defaultOutstandingPrincipal` at `defaultDate`
+- **Projected income**: scheduled coupons (not redemptions) for active instruments; expected recoveries for defaulted instruments
+- Purchases and redemptions are **excluded** (principal movements, not P&L)
+
+Returns `TimelinePoint[]` with `historical` (up to and including today) and `projected` (after today) series. Today's month has both set to connect the two lines.
 
 ### Currency Conversion (`src/services/exchangeRates/`)
 
@@ -220,5 +234,5 @@ Feature disabled if LLM settings are incomplete.
 - **No external state management for domain data** — Dexie live queries (`useLiveQuery`) are the reactive layer
 - **Zustand only for UI state** (theme, sidebar open, base currency selection) — not for domain entities
 - **No ORM-style relations** — foreign keys by convention (`instrumentId`), joined manually in hooks
-- **PWA** — service worker via vite-plugin-pwa, offline-capable, `@/icon-{192,512}.png` needed for install
+- **PWA** — service worker via vite-plugin-pwa, offline-capable. Icons at `public/icon-192.png` and `public/icon-512.png` (generated from `favicon.svg`). Install prompt via `useInstallPrompt` hook + `InstallBanner` component; uses `beforeinstallprompt` event (Chrome/Edge only). Dev HTTPS via `@vitejs/plugin-basic-ssl`; PWA service worker enabled in dev via `devOptions: { enabled: true }`.
 - **Backup / restore** — full JSON export/import in Settings; only path to move data between devices
