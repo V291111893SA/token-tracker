@@ -1,10 +1,11 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '@/db/db'
-import type { PaymentRecord } from '@/db/types'
+import type { Currency, PaymentRecord } from '@/db/types'
 
 export interface CalendarPaymentEntry {
   payment: PaymentRecord
   instrumentName: string
+  instrumentCurrency: Currency
 }
 
 export type DayPaymentsMap = Map<number, CalendarPaymentEntry[]>
@@ -27,8 +28,12 @@ export function useCalendarPayments(year: number, month: number): DayPaymentsMap
       ])
 
       const instrumentNames = new Map<number, string>()
+      const instrumentCurrencies = new Map<number, Currency>()
       for (const inst of instruments) {
-        if (inst.id != null) instrumentNames.set(inst.id, inst.name)
+        if (inst.id != null) {
+          instrumentNames.set(inst.id, inst.name)
+          instrumentCurrencies.set(inst.id, inst.currency)
+        }
       }
 
       // Month boundaries as ISO strings for fast comparison
@@ -44,6 +49,7 @@ export function useCalendarPayments(year: number, month: number): DayPaymentsMap
         const entry: CalendarPaymentEntry = {
           payment,
           instrumentName: instrumentNames.get(payment.instrumentId) ?? `#${payment.instrumentId}`,
+          instrumentCurrency: instrumentCurrencies.get(payment.instrumentId) ?? 'BYN',
         }
         const existing = map.get(day)
         if (existing) {

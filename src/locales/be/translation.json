@@ -131,7 +131,9 @@
   "calendar": {
     "title": "Каляндар выплат",
     "expected": "Чакаецца",
-    "noPayments": "Няма выплат у гэтым месяцы"
+    "noPayments": "Няма выплат у гэтым месяцы",
+    "displayCurrency": "Валюта адлюстравання",
+    "total": "Усяго"
   },
   "settings": {
     "title": "Налады",

@@ -32,7 +32,7 @@ function useOverdueInstrumentIds(): Set<number> {
       db.paymentRecords
         .where('status')
         .equals('scheduled')
-        .and((r) => r.paymentDateTo < today)
+        .and((r) => r.paymentDateTo < today && r.expectedAmount > 0)
         .toArray()
         .then((records) => new Set(records.map((r) => r.instrumentId))),
     [],

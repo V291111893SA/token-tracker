@@ -131,7 +131,9 @@
   "calendar": {
     "title": "Календарь выплат",
     "expected": "Ожидается",
-    "noPayments": "Нет выплат в этом месяце"
+    "noPayments": "Нет выплат в этом месяце",
+    "displayCurrency": "Валюта отображения",
+    "total": "Итого"
   },
   "settings": {
     "title": "Настройки",
