@@ -3,6 +3,7 @@ import { useRoutes } from 'react-router-dom'
 import { routes } from './routes'
 import { Sidebar } from '@/shared/components/Sidebar'
 import { BottomTabBar } from '@/shared/components/BottomTabBar'
+import { InstallBanner } from '@/shared/components/InstallBanner'
 import { useUIStore, applyTheme } from '@/store/uiStore'
 import { getSettings } from '@/db/db'
 import i18n from './i18n'
@@ -36,6 +37,7 @@ export default function App() {
         <main className="min-w-0 flex-1 pb-20 lg:pb-0">{element}</main>
       </div>
       <BottomTabBar />
+      <InstallBanner />
     </div>
   )
 }

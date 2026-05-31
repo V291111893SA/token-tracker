@@ -10,7 +10,6 @@ import {
   CartesianGrid,
   Tooltip,
   ReferenceLine,
-  type TooltipProps,
 } from 'recharts'
 import { useUIStore } from '@/store/uiStore'
 import { EmptyState } from '@/shared/components/EmptyState'
@@ -60,14 +59,24 @@ function PnLTooltip({
   payload,
   label,
   baseCurrency,
-}: TooltipProps<number, string> & { baseCurrency: Currency }) {
+}: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  active?: boolean
+  payload?: readonly any[]
+  label?: string | number
+  baseCurrency: Currency
+}) {
   if (!active || !payload?.length) return null
-  const value = payload.find((p) => p.value != null)?.value
-  if (value == null) return null
+
+  const rawValue = payload.find((p) => p.value != null)?.value as number | string | null | undefined
+  if (rawValue == null) return null
+  const value = typeof rawValue === 'string' ? parseFloat(rawValue) : rawValue
+  if (!isFinite(value)) return null
+
   const isProjected = payload.find((p) => p.dataKey === 'projected' && p.value != null) != null
   return (
     <div className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm shadow-lg dark:border-gray-700 dark:bg-gray-900">
-      <p className="font-medium text-gray-700 dark:text-gray-300">{label}</p>
+      <p className="font-medium text-gray-700 dark:text-gray-300">{String(label ?? '')}</p>
       <p
         className={`mt-0.5 font-semibold tabular-nums ${value >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}
       >

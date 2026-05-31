@@ -29,8 +29,12 @@ function isoToLabel(iso: string): string {
 
 function monthRange(start: string, end: string): string[] {
   const months: string[] = []
-  let [y, m] = start.split('-').map(Number)
-  const [ey, em] = end.split('-').map(Number)
+  const startParts = start.split('-').map(Number)
+  const endParts = end.split('-').map(Number)
+  let y = startParts[0] ?? 0
+  let m = startParts[1] ?? 1
+  const ey = endParts[0] ?? 0
+  const em = endParts[1] ?? 1
   while (y < ey || (y === ey && m <= em)) {
     months.push(`${y}-${String(m).padStart(2, '0')}`)
     if (++m > 12) {
