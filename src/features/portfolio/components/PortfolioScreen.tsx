@@ -60,8 +60,8 @@ function PnLTooltip({
   label,
   baseCurrency,
 }: {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   active?: boolean
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   payload?: readonly any[]
   label?: string | number
   baseCurrency: Currency
@@ -296,10 +296,10 @@ export default function PortfolioScreen() {
             </span>
             <span className="flex items-center gap-1.5">
               <span
-                className="inline-block h-0.5 w-4 bg-indigo-500 opacity-60"
+                className="inline-block h-0.5 w-4 opacity-60"
                 style={{
                   backgroundImage:
-                    'repeating-linear-gradient(90deg,#6366f1 0,#6366f1 4px,transparent 4px,transparent 7px)',
+                    'repeating-linear-gradient(90deg,#6366f1 0,#6366f1 3px,transparent 3px,transparent 6px)',
                 }}
               />
               {t('portfolio.chartProjected')}
