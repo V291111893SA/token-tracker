@@ -156,7 +156,12 @@ function PnLChart({
   return (
     <ResponsiveContainer width="100%" height={280}>
       <ComposedChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.6} />
+        <CartesianGrid
+          strokeDasharray="3 3"
+          stroke="#e5e7eb"
+          strokeOpacity={0.6}
+          vertical={false}
+        />
 
         <XAxis
           dataKey="label"
