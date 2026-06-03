@@ -122,12 +122,16 @@ function PnLChart({
       <ComposedChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
         <defs>
           <linearGradient id="pnlHistGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset={0} stopColor="#22c55e" stopOpacity={0.25} />
             <stop offset={gradientOffset} stopColor="#22c55e" stopOpacity={0.25} />
             <stop offset={gradientOffset} stopColor="#ef4444" stopOpacity={0.25} />
+            <stop offset={1} stopColor="#ef4444" stopOpacity={0.25} />
           </linearGradient>
           <linearGradient id="pnlProjGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset={0} stopColor="#22c55e" stopOpacity={0.1} />
             <stop offset={gradientOffset} stopColor="#22c55e" stopOpacity={0.1} />
             <stop offset={gradientOffset} stopColor="#ef4444" stopOpacity={0.1} />
+            <stop offset={1} stopColor="#ef4444" stopOpacity={0.1} />
           </linearGradient>
         </defs>
 
