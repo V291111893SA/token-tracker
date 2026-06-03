@@ -143,7 +143,7 @@ function PnLChart({
         <ReferenceLine y={0} stroke="#6b7280" strokeWidth={1.5} strokeDasharray="5 3" />
 
         {/* Historical — colored by value */}
-        <Bar dataKey="historical" isAnimationActive={false}>
+        <Bar dataKey="historical" isAnimationActive={false} stroke="#6366f1" strokeWidth={2}>
           {data.map((entry, index) => (
             <Cell
               key={`hist-${index}`}
@@ -154,7 +154,13 @@ function PnLChart({
         </Bar>
 
         {/* Projected — colored by value, lighter */}
-        <Bar dataKey="projected" isAnimationActive={false}>
+        <Bar
+          dataKey="projected"
+          isAnimationActive={false}
+          stroke="#6366f1"
+          strokeWidth={2}
+          strokeOpacity={0.6}
+        >
           {data.map((entry, index) => (
             <Cell
               key={`proj-${index}`}
