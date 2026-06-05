@@ -7,6 +7,9 @@ interface ToggleProps {
 export function Toggle({ checked, onChange, label }: ToggleProps) {
   return (
     <label className="flex cursor-pointer items-center gap-3">
+      {label && (
+        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</span>
+      )}
       <button
         type="button"
         onClick={() => onChange(!checked)}
@@ -20,9 +23,6 @@ export function Toggle({ checked, onChange, label }: ToggleProps) {
           }`}
         />
       </button>
-      {label && (
-        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</span>
-      )}
     </label>
   )
 }
