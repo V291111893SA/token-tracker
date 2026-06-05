@@ -25,6 +25,7 @@ import { Button } from '@/shared/components/Button'
 import { Input } from '@/shared/components/Input'
 import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
 import { Spinner } from '@/shared/components/Spinner'
+import { Toggle } from '@/shared/components/Toggle'
 import { useUIStore } from '@/store/uiStore'
 import { formatDate } from '@/shared/utils/format'
 
@@ -258,17 +259,11 @@ export function SettingsScreen() {
 
           {/* Hide Amounts */}
           <div>
-            <label className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                checked={hideAmounts}
-                onChange={(e) => setHideAmounts(e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-              />
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                {t('settings.hideAmounts', 'Скрывать суммы по умолчанию')}
-              </span>
-            </label>
+            <Toggle
+              checked={hideAmounts}
+              onChange={setHideAmounts}
+              label={t('settings.hideAmounts')}
+            />
           </div>
         </div>
       </div>
