@@ -23,19 +23,21 @@ if (!fs.existsSync(SCREENSHOTS_DIR)) {
   fs.mkdirSync(SCREENSHOTS_DIR, { recursive: true })
 }
 
-const APP_URL = 'https://localhost:5174'
+const APP_URL = 'https://localhost:5173'
 const VIEWPORT = { width: 1280, height: 800 }
 
 async function takeScreenshots() {
   let browser
   try {
     console.log('🚀 Запуск Chromium...')
-    browser = await chromium.launch()
+    browser = await chromium.launch({
+      args: ['--ignore-certificate-errors'],
+    })
 
-    console.log('📱 Создание страницы с размером 1280x800...')
-    const context = await browser.createBrowserContext()
-    const page = await context.newPage({
+    console.log('📱 Создание страницы...')
+    const page = await browser.newPage({
       viewport: VIEWPORT,
+      ignoreHTTPSErrors: true,
     })
 
     // Disable animations for consistent screenshots
@@ -44,10 +46,16 @@ async function takeScreenshots() {
     })
 
     console.log('🌐 Загрузка приложения...')
-    await page.goto(APP_URL, {
-      waitUntil: 'networkidle',
-      ignoreHTTPSErrors: true,
-    })
+    try {
+      await page.goto(APP_URL, {
+        waitUntil: 'networkidle',
+      })
+    } catch (e) {
+      console.log('⚠️  Игнорируем ошибку сертификата, пытаемся снова...')
+      await page.goto(APP_URL, {
+        waitUntil: 'domcontentloaded',
+      })
+    }
 
     console.log('⏳ Ожидание загрузки...')
     await page.waitForTimeout(2000)
@@ -59,10 +67,15 @@ async function takeScreenshots() {
     })
 
     console.log('🔄 Перезагрузка с демо-данными...')
-    await page.goto(APP_URL, {
-      waitUntil: 'networkidle',
-      ignoreHTTPSErrors: true,
-    })
+    try {
+      await page.goto(APP_URL, {
+        waitUntil: 'networkidle',
+      })
+    } catch (e) {
+      await page.goto(APP_URL, {
+        waitUntil: 'domcontentloaded',
+      })
+    }
 
     await page.waitForTimeout(3000)
 
@@ -71,7 +84,11 @@ async function takeScreenshots() {
       localStorage.setItem('ui-store', JSON.stringify({ theme: 'light', language: 'ru' }))
     })
 
-    await page.reload({ waitUntil: 'networkidle' })
+    try {
+      await page.reload({ waitUntil: 'networkidle' })
+    } catch (e) {
+      await page.reload({ waitUntil: 'domcontentloaded' })
+    }
     await page.waitForTimeout(1000)
 
     // Screenshot 1: Portfolio Dashboard
@@ -92,13 +109,12 @@ async function takeScreenshots() {
 
     // Screenshot 3: Instrument Detail
     console.log('📸 3/7 Детали инструмента (Detail)...')
-    // Click on first instrument - find first clickable instrument row
-    const instrumentLink = await page.locator('a').filter({ has: page.locator('text=/GURMINA|COMPASS|BOND/') }).first()
-    if (await instrumentLink.isVisible()) {
-      await instrumentLink.click()
-    } else {
-      // Fallback: try to find any link in the instruments table
-      await page.locator('table tbody tr:first-child td:first-child').click()
+    try {
+      // Try to find and click on first instrument link
+      const firstInstrument = await page.locator('a').filter({ hasText: /\w/ }).first()
+      await firstInstrument.click({ timeout: 5000 })
+    } catch (e) {
+      console.log('⚠️  Не удалось найти инструмент, пропускаем...')
     }
     await page.waitForTimeout(1500)
     await page.screenshot({
@@ -158,7 +174,7 @@ async function takeScreenshots() {
         console.log(`   ✓ ${f} (${(size / 1024).toFixed(1)} KB)`)
       })
 
-    await context.close()
+    await page.close()
   } catch (error) {
     console.error('❌ Ошибка:', error.message)
     console.error('\n💡 Советы:')
