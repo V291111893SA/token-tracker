@@ -210,18 +210,22 @@ export function PurchaseLotList({ instrumentId, currency, tokenPrice }: Props) {
                     {formatDate(lot.purchaseDate)}
                   </span>
                   <div className="flex gap-1">
-                    <button
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      icon={<Pencil className="size-4" />}
                       onClick={() => openEdit(lot)}
-                      className="rounded-lg p-1.5 text-gray-400 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800"
                     >
-                      <Pencil className="size-4" />
-                    </button>
-                    <button
+                      <span className="hidden sm:inline">{t('common.edit')}</span>
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      icon={<Trash2 className="size-4" />}
                       onClick={() => setDeleteTarget(lot)}
-                      className="rounded-lg p-1.5 text-red-400 transition-colors hover:bg-red-50 dark:hover:bg-red-900/20"
                     >
-                      <Trash2 className="size-4" />
-                    </button>
+                      <span className="hidden sm:inline">{t('common.delete')}</span>
+                    </Button>
                   </div>
                 </div>
                 <div className="flex gap-4 text-sm text-gray-500 dark:text-gray-400">

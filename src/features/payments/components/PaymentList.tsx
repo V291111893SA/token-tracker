@@ -8,6 +8,7 @@ import { Badge } from '@/shared/components/Badge'
 import { Button } from '@/shared/components/Button'
 import { Input } from '@/shared/components/Input'
 import { Modal } from '@/shared/components/Modal'
+import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
 import { EmptyState } from '@/shared/components/EmptyState'
 import { formatCurrency, formatDateRange } from '@/shared/utils/format'
 import { useUIStore } from '@/store/uiStore'
@@ -46,6 +47,7 @@ export function PaymentList({ instrumentId }: Props) {
   const [tab, setTab] = useState<Tab>('upcoming')
   const [page, setPage] = useState(0)
   const [markPaidState, setMarkPaidState] = useState<MarkPaidState | null>(null)
+  const [markMissedPayment, setMarkMissedPayment] = useState<PaymentRecord | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -72,9 +74,18 @@ export function PaymentList({ instrumentId }: Props) {
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
   const displayed = filtered.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE)
 
-  async function handleMarkMissed(payment: PaymentRecord) {
-    if (!payment.id) return
-    await db.paymentRecords.update(payment.id, { status: 'missed' })
+  function confirmMarkMissed(payment: PaymentRecord) {
+    setMarkMissedPayment(payment)
+  }
+
+  async function handleMarkMissed() {
+    if (!markMissedPayment?.id) return
+    try {
+      await db.paymentRecords.update(markMissedPayment.id, { status: 'missed' })
+      setMarkMissedPayment(null)
+    } catch (e) {
+      console.error('Error marking payment as missed:', e)
+    }
   }
 
   function openMarkPaid(payment: PaymentRecord) {
@@ -194,15 +205,15 @@ export function PaymentList({ instrumentId }: Props) {
                         icon={<CircleCheck className="size-4" />}
                         onClick={() => openMarkPaid(payment)}
                       >
-                        {t('payment.markPaid')}
+                        <span className="hidden sm:inline">{t('payment.markPaid')}</span>
                       </Button>
                       <Button
                         variant="secondary"
                         size="sm"
                         icon={<CircleX className="size-4" />}
-                        onClick={() => void handleMarkMissed(payment)}
+                        onClick={() => confirmMarkMissed(payment)}
                       >
-                        {t('payment.markMissed')}
+                        <span className="hidden sm:inline">{t('payment.markMissed')}</span>
                       </Button>
                     </div>
                   )}
@@ -275,6 +286,15 @@ export function PaymentList({ instrumentId }: Props) {
           </div>
         )}
       </Modal>
+
+      {/* Mark Missed Confirmation */}
+      <ConfirmDialog
+        open={markMissedPayment !== null}
+        title={t('payment.markMissed')}
+        message={t('payment.markMissedConfirm')}
+        onConfirm={() => void handleMarkMissed()}
+        onCancel={() => setMarkMissedPayment(null)}
+      />
     </div>
   )
 }

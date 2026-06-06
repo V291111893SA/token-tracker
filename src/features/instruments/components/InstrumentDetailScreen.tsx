@@ -384,8 +384,12 @@ export default function InstrumentDetailScreen() {
           <p className="text-xs text-gray-500 dark:text-gray-400">{t('payment.totalRemaining')}</p>
           <p className="mt-1 text-lg font-semibold text-gray-900 tabular-nums dark:text-gray-100">
             {formatCurrency(paymentSummary.remainingCoupons, instrument.currency)}
-            <span className="text-gray-400">+</span>
-            {formatCurrency(paymentSummary.remainingPrincipal, instrument.currency)}
+          </p>
+          <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+            <span className="text-gray-400">+</span>{' '}
+            <span className="font-medium text-gray-700 dark:text-gray-300">
+              {formatCurrency(paymentSummary.remainingPrincipal, instrument.currency)}
+            </span>
           </p>
         </div>
       </div>

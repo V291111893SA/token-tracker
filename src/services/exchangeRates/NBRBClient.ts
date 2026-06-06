@@ -1,5 +1,5 @@
 import type { Currency } from '@/db/types'
-import { db } from '@/db/db'
+import { db, updateSettings } from '@/db/db'
 
 const NBRB_URL = 'https://api.nbrb.by/exrates/rates?periodicity=0'
 const CURRENCY_IDS: Record<Exclude<Currency, 'BYN'>, number> = {
@@ -51,6 +51,21 @@ export async function fetchAndCacheRates(): Promise<void> {
       }
     }
   })
+}
+
+export async function refreshExchangeRatesIfNeeded(): Promise<void> {
+  try {
+    const usdRate = await db.exchangeRates.get('USD')
+    if (needsRefresh(usdRate?.fetchedAt)) {
+      await fetchAndCacheRates()
+    }
+    // Always update settings with current rate fetch timestamp
+    if (usdRate?.fetchedAt) {
+      await updateSettings({ exchangeRatesUpdatedAt: usdRate.fetchedAt })
+    }
+  } catch {
+    // silent — offline or API unavailable
+  }
 }
 
 export async function convertToCurrency(

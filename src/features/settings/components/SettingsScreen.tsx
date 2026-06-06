@@ -30,7 +30,7 @@ import { useSettings } from '@/features/settings/hooks/useSettings'
 import { updateSettings } from '@/db/db'
 import { loadDemoData } from '@/db/dbManager'
 import { setPresentationMode as setPresentationModeStorage } from '@/db/presentationModeStorage'
-import { fetchAndCacheRates } from '@/services/exchangeRates/NBRBClient'
+import { refreshExchangeRatesIfNeeded } from '@/services/exchangeRates/NBRBClient'
 import { testConnection } from '@/services/llm/LLMService'
 import { exportBackup, importBackup, downloadJson } from '@/db/backup'
 import { Button } from '@/shared/components/Button'
@@ -103,8 +103,7 @@ export function SettingsScreen() {
     setRatesLoading(true)
     setRatesError(null)
     try {
-      await fetchAndCacheRates()
-      await updateSettings({ exchangeRatesUpdatedAt: new Date().toISOString() })
+      await refreshExchangeRatesIfNeeded()
     } catch (e) {
       setRatesError(e instanceof Error ? e.message : String(e))
     } finally {

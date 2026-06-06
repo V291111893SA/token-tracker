@@ -5,8 +5,8 @@ import { Sidebar } from '@/shared/components/Sidebar'
 import { BottomTabBar } from '@/shared/components/BottomTabBar'
 import { InstallBanner } from '@/shared/components/InstallBanner'
 import { useUIStore, applyTheme } from '@/store/uiStore'
-import { db, getSettings } from '@/db/db'
-import { fetchAndCacheRates, needsRefresh } from '@/services/exchangeRates/NBRBClient'
+import { getSettings } from '@/db/db'
+import { refreshExchangeRatesIfNeeded } from '@/services/exchangeRates/NBRBClient'
 import i18n from './i18n'
 
 export default function App() {
@@ -15,16 +15,13 @@ export default function App() {
   const element = useRoutes(routes)
 
   useEffect(() => {
-    void (async () => {
-      try {
-        const usdRate = await db.exchangeRates.get('USD')
-        if (needsRefresh(usdRate?.fetchedAt)) {
-          await fetchAndCacheRates()
-        }
-      } catch {
-        // silent — offline or API unavailable
-      }
-    })()
+    void refreshExchangeRatesIfNeeded()
+
+    const interval = setInterval(() => {
+      void refreshExchangeRatesIfNeeded()
+    }, 60 * 1000) // Check every minute
+
+    return () => clearInterval(interval)
   }, [])
 
   useEffect(() => {
