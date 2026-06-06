@@ -293,6 +293,24 @@ export function SettingsScreen() {
             </div>
           </div>
 
+          {/* Hide Amounts */}
+          <div>
+            <Toggle
+              checked={hideAmounts}
+              onChange={setHideAmounts}
+              label={t('settings.hideAmounts')}
+            />
+          </div>
+
+          {/* Show Zero Payments */}
+          <div>
+            <Toggle
+              checked={showZeroPayments}
+              onChange={setShowZeroPayments}
+              label={t('settings.showZeroPayments')}
+            />
+          </div>
+
           {/* App Version & Updates */}
           <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20">
             <div className="mb-3 flex items-center justify-between">
@@ -326,73 +344,45 @@ export function SettingsScreen() {
               {t('settings.updateInfo')}
             </p>
           </div>
+        </div>
+      </div>
 
-          {/* Hide Amounts */}
-          <div>
-            <Toggle
-              checked={hideAmounts}
-              onChange={setHideAmounts}
-              label={t('settings.hideAmounts')}
-            />
+      {/* Backup section */}
+      <div className="mb-4 rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-900">
+        <h2 className="mb-4 text-base font-semibold text-gray-900 dark:text-gray-100">
+          {t('settings.backup')}
+        </h2>
+
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={<Download className="size-4" />}
+              onClick={() => void handleExport()}
+            >
+              {t('settings.exportBackup')}
+            </Button>
+
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={<Upload className="size-4" />}
+              onClick={handleImportClick}
+            >
+              {t('settings.importBackup')}
+            </Button>
           </div>
 
-          {/* Show Zero Payments */}
-          <div>
-            <Toggle
-              checked={showZeroPayments}
-              onChange={setShowZeroPayments}
-              label={t('settings.showZeroPayments')}
-            />
-          </div>
+          {importError && <p className="text-xs text-red-500 dark:text-red-400">{importError}</p>}
 
-          {/* Presentation Mode */}
-          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-900/20">
-            <div className="flex items-center gap-3">
-              <Toggle
-                checked={presentationMode}
-                onChange={async (enabled) => {
-                  if (presentationModeLoading) return
-                  setPresentationModeLoading(true)
-                  try {
-                    if (enabled) {
-                      // Load demo data into demoDb
-                      const demoData = demoDataJson as unknown as {
-                        data: {
-                          instruments?: Instrument[]
-                          purchaseLots?: PurchaseLot[]
-                          paymentRecords?: PaymentRecord[]
-                          ledgerEntries?: LedgerEntry[]
-                          exchangeRates?: ExchangeRate[]
-                          settings?: Settings[]
-                        }
-                      }
-                      await loadDemoData({
-                        instruments: demoData.data.instruments || [],
-                        purchaseLots: demoData.data.purchaseLots || [],
-                        paymentRecords: demoData.data.paymentRecords || [],
-                        ledgerEntries: demoData.data.ledgerEntries || [],
-                        exchangeRates: demoData.data.exchangeRates || [],
-                        settings: demoData.data.settings,
-                      })
-                    }
-                    // Save flag to localStorage
-                    setPresentationModeStorage(enabled)
-                    setPresentationMode(enabled)
-                    // Reload page
-                    await new Promise((resolve) => setTimeout(resolve, 500))
-                    window.location.reload()
-                  } finally {
-                    setPresentationModeLoading(false)
-                  }
-                }}
-                label={t('settings.presentationMode')}
-              />
-              {presentationModeLoading && <Spinner className="size-4" />}
-            </div>
-            <p className="mt-2 text-xs text-amber-700 dark:text-amber-300">
-              {t('settings.presentationModeDesc')}
-            </p>
-          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json"
+            className="hidden"
+            onChange={handleFileChange}
+          />
         </div>
       </div>
 
@@ -538,42 +528,58 @@ export function SettingsScreen() {
         )}
       </div>
 
-      {/* Backup section */}
-      <div className="mb-4 rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-900">
-        <h2 className="mb-4 text-base font-semibold text-gray-900 dark:text-gray-100">
-          {t('settings.backup')}
+      {/* Presentation Mode section */}
+      <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-5 dark:border-amber-800 dark:bg-amber-900/20">
+        <h2 className="mb-4 text-base font-semibold text-amber-900 dark:text-amber-100">
+          {t('settings.presentationMode')}
         </h2>
 
         <div className="flex flex-col gap-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={<Download className="size-4" />}
-              onClick={() => void handleExport()}
-            >
-              {t('settings.exportBackup')}
-            </Button>
-
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={<Upload className="size-4" />}
-              onClick={handleImportClick}
-            >
-              {t('settings.importBackup')}
-            </Button>
+          <div className="flex items-center gap-3">
+            <Toggle
+              checked={presentationMode}
+              onChange={async (enabled) => {
+                if (presentationModeLoading) return
+                setPresentationModeLoading(true)
+                try {
+                  if (enabled) {
+                    // Load demo data into demoDb
+                    const demoData = demoDataJson as unknown as {
+                      data: {
+                        instruments?: Instrument[]
+                        purchaseLots?: PurchaseLot[]
+                        paymentRecords?: PaymentRecord[]
+                        ledgerEntries?: LedgerEntry[]
+                        exchangeRates?: ExchangeRate[]
+                        settings?: Settings[]
+                      }
+                    }
+                    await loadDemoData({
+                      instruments: demoData.data.instruments || [],
+                      purchaseLots: demoData.data.purchaseLots || [],
+                      paymentRecords: demoData.data.paymentRecords || [],
+                      ledgerEntries: demoData.data.ledgerEntries || [],
+                      exchangeRates: demoData.data.exchangeRates || [],
+                      settings: demoData.data.settings,
+                    })
+                  }
+                  // Save flag to localStorage
+                  setPresentationModeStorage(enabled)
+                  setPresentationMode(enabled)
+                  // Reload page
+                  await new Promise((resolve) => setTimeout(resolve, 500))
+                  window.location.reload()
+                } finally {
+                  setPresentationModeLoading(false)
+                }
+              }}
+              label={t('settings.presentationMode')}
+            />
+            {presentationModeLoading && <Spinner className="size-4" />}
           </div>
-
-          {importError && <p className="text-xs text-red-500 dark:text-red-400">{importError}</p>}
-
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".json"
-            className="hidden"
-            onChange={handleFileChange}
-          />
+          <p className="text-xs text-amber-700 dark:text-amber-300">
+            {t('settings.presentationModeDesc')}
+          </p>
         </div>
       </div>
 
