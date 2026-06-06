@@ -3,6 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '@/db/db'
 import { useTranslation } from 'react-i18next'
 import i18n from '@/app/i18n'
+import { APP_VERSION } from '@/app/version'
 import {
   Sun,
   Moon,
@@ -58,8 +59,6 @@ export function SettingsScreen() {
     setShowZeroPayments,
     presentationMode,
     setPresentationMode,
-    enableAutoUpdates,
-    setEnableAutoUpdates,
   } = useUIStore()
 
   // Exchange rates
@@ -79,6 +78,20 @@ export function SettingsScreen() {
 
   // Presentation mode loading
   const [presentationModeLoading, setPresentationModeLoading] = useState(false)
+
+  // Check for updates
+  const [checkingUpdates, setCheckingUpdates] = useState(false)
+
+  const handleCheckUpdates = async () => {
+    setCheckingUpdates(true)
+    try {
+      // Simply reload the page to check for updates and refresh the app
+      // Service Worker will update the cached files if available
+      window.location.reload()
+    } finally {
+      setCheckingUpdates(false)
+    }
+  }
 
   // Backup
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -280,6 +293,40 @@ export function SettingsScreen() {
             </div>
           </div>
 
+          {/* App Version & Updates */}
+          <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20">
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {t('settings.appVersion')}
+              </p>
+              <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">
+                {APP_VERSION}
+              </span>
+            </div>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleCheckUpdates}
+              disabled={checkingUpdates}
+              className="w-full"
+            >
+              {checkingUpdates ? (
+                <>
+                  <Spinner className="mr-2 size-4" />
+                  {t('settings.checkingUpdates')}
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="mr-2 size-4" />
+                  {t('settings.checkUpdates')}
+                </>
+              )}
+            </Button>
+            <p className="mt-2 text-xs text-gray-600 dark:text-gray-400">
+              {t('settings.updateInfo')}
+            </p>
+          </div>
+
           {/* Hide Amounts */}
           <div>
             <Toggle
@@ -296,18 +343,6 @@ export function SettingsScreen() {
               onChange={setShowZeroPayments}
               label={t('settings.showZeroPayments')}
             />
-          </div>
-
-          {/* Enable Auto Updates */}
-          <div>
-            <Toggle
-              checked={enableAutoUpdates}
-              onChange={setEnableAutoUpdates}
-              label={t('settings.enableAutoUpdates')}
-            />
-            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              {t('settings.enableAutoUpdatesDesc')}
-            </p>
           </div>
 
           {/* Presentation Mode */}

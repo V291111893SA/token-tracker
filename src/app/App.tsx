@@ -10,15 +10,8 @@ import { refreshExchangeRatesIfNeeded } from '@/services/exchangeRates/NBRBClien
 import i18n from './i18n'
 
 export default function App() {
-  const {
-    setTheme,
-    setLanguage,
-    setBaseCurrency,
-    setHideAmounts,
-    setShowZeroPayments,
-    theme,
-    enableAutoUpdates,
-  } = useUIStore()
+  const { setTheme, setLanguage, setBaseCurrency, setHideAmounts, setShowZeroPayments, theme } =
+    useUIStore()
   const element = useRoutes(routes)
 
   useEffect(() => {
@@ -53,33 +46,6 @@ export default function App() {
     mq.addEventListener('change', handler)
     return () => mq.removeEventListener('change', handler)
   }, [theme])
-
-  // Control Service Worker updates based on enableAutoUpdates setting
-  useEffect(() => {
-    if (!navigator.serviceWorker) return
-
-    const handleServiceWorkerMessage = (event: MessageEvent) => {
-      // If auto updates are disabled, skip the update prompt
-      if (!enableAutoUpdates && event.data?.type === 'SKIP_WAITING') {
-        event.waitUntil(Promise.resolve())
-        return
-      }
-    }
-
-    navigator.serviceWorker.addEventListener('message', handleServiceWorkerMessage)
-
-    // Check if there's a controller and communicate the setting
-    if (navigator.serviceWorker.controller) {
-      navigator.serviceWorker.controller.postMessage({
-        type: 'ENABLE_AUTO_UPDATES',
-        enabled: enableAutoUpdates,
-      })
-    }
-
-    return () => {
-      navigator.serviceWorker.removeEventListener('message', handleServiceWorkerMessage)
-    }
-  }, [enableAutoUpdates])
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100">
