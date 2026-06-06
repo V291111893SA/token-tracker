@@ -250,6 +250,10 @@ export default function CalendarScreen() {
               year === today.getFullYear()
             const entries = isValid ? (dayPaymentsMap.get(day) ?? []) : []
             const hasPayments = entries.length > 0
+            const cellTotal = entries.reduce(
+              (s, e) => s + convert(e.payment.expectedAmount, e.instrumentCurrency, baseCurrency),
+              0,
+            )
 
             return (
               <div
@@ -291,6 +295,10 @@ export default function CalendarScreen() {
                             <span className="text-[10px] text-gray-400">+{entries.length - 4}</span>
                           )}
                         </div>
+
+                        <p className="mt-0.5 hidden truncate text-[10px] text-gray-500 tabular-nums md:block dark:text-gray-400">
+                          {formatCurrency(cellTotal, baseCurrency)}
+                        </p>
                       </>
                     )}
                   </>
