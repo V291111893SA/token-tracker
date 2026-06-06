@@ -112,6 +112,7 @@
     "type_redemption": "Пагашэнне",
     "type_recovery": "Вяртанне пасля дэфолту",
     "type_sale": "Продаж",
+    "filterAll": "Усе",
     "empty": "Няма запісаў."
   },
   "portfolio": {

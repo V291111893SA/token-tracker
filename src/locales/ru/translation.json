@@ -112,6 +112,7 @@
     "type_redemption": "Погашение",
     "type_recovery": "Возврат после дефолта",
     "type_sale": "Продажа",
+    "filterAll": "Все",
     "empty": "Нет записей."
   },
   "portfolio": {

@@ -76,7 +76,7 @@ export function LedgerScreen() {
   const displayed = entries.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
 
   const selectOptions = [
-    { value: '', label: t('common.filter') + ': Все' },
+    { value: '', label: t('common.filter') + ': ' + t('ledger.filterAll') },
     { value: 'purchase', label: t('ledger.type_purchase') },
     { value: 'coupon', label: t('ledger.type_coupon') },
     { value: 'redemption', label: t('ledger.type_redemption') },
