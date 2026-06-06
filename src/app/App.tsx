@@ -10,7 +10,8 @@ import { fetchAndCacheRates, needsRefresh } from '@/services/exchangeRates/NBRBC
 import i18n from './i18n'
 
 export default function App() {
-  const { setTheme, setLanguage, setBaseCurrency, setHideAmounts, theme } = useUIStore()
+  const { setTheme, setLanguage, setBaseCurrency, setHideAmounts, setShowZeroPayments, theme } =
+    useUIStore()
   const element = useRoutes(routes)
 
   useEffect(() => {
@@ -33,10 +34,11 @@ export default function App() {
       setLanguage(settings.language)
       setBaseCurrency(settings.baseCurrency)
       setHideAmounts(settings.hideAmounts ?? false)
+      setShowZeroPayments(settings.showZeroPayments ?? false)
       await i18n.changeLanguage(settings.language)
       document.title = i18n.t('appTitle')
     })()
-  }, [setTheme, setLanguage, setBaseCurrency, setHideAmounts])
+  }, [setTheme, setLanguage, setBaseCurrency, setHideAmounts, setShowZeroPayments])
 
   useEffect(() => {
     applyTheme(theme)

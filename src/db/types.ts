@@ -79,6 +79,7 @@ export interface Settings {
   language: Language
   baseCurrency: Currency
   hideAmounts: boolean
+  showZeroPayments: boolean
   llmBaseUrl?: string
   llmApiKey?: string
   llmModel?: string

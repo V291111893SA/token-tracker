@@ -179,6 +179,7 @@
     "language": "Язык",
     "baseCurrency": "Базовая валюта",
     "hideAmounts": "Скрывать суммы по умолчанию",
+    "showZeroPayments": "Показывать нулевые выплаты",
     "exchangeRates": "Курсы валют",
     "refreshRates": "Обновить курсы",
     "refreshRatesShort": "Обновить",

@@ -7,11 +7,13 @@ interface UIState {
   language: Language
   baseCurrency: Currency
   hideAmounts: boolean
+  showZeroPayments: boolean
   sidebarOpen: boolean
   setTheme: (theme: Theme) => void
   setLanguage: (language: Language) => void
   setBaseCurrency: (currency: Currency) => void
   setHideAmounts: (hide: boolean) => void
+  setShowZeroPayments: (show: boolean) => void
   setSidebarOpen: (open: boolean) => void
 }
 
@@ -20,6 +22,7 @@ export const useUIStore = create<UIState>((set) => ({
   language: 'ru',
   baseCurrency: 'BYN',
   hideAmounts: false,
+  showZeroPayments: false,
   sidebarOpen: false,
 
   setTheme: (theme) => {
@@ -41,6 +44,11 @@ export const useUIStore = create<UIState>((set) => ({
   setHideAmounts: (hideAmounts) => {
     set({ hideAmounts })
     void updateSettings({ hideAmounts })
+  },
+
+  setShowZeroPayments: (showZeroPayments) => {
+    set({ showZeroPayments })
+    void updateSettings({ showZeroPayments })
   },
 
   setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),

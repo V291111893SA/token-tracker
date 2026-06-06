@@ -41,6 +41,8 @@ export function SettingsScreen() {
     setBaseCurrency,
     hideAmounts,
     setHideAmounts,
+    showZeroPayments,
+    setShowZeroPayments,
   } = useUIStore()
 
   // Exchange rates
@@ -72,6 +74,7 @@ export function SettingsScreen() {
       setLlmApiKey(settings.llmApiKey ?? '')
       setLlmModel(settings.llmModel ?? '')
       setHideAmounts(settings.hideAmounts ?? false)
+      setShowZeroPayments(settings.showZeroPayments ?? false)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settings?.id])
@@ -263,6 +266,15 @@ export function SettingsScreen() {
               checked={hideAmounts}
               onChange={setHideAmounts}
               label={t('settings.hideAmounts')}
+            />
+          </div>
+
+          {/* Show Zero Payments */}
+          <div>
+            <Toggle
+              checked={showZeroPayments}
+              onChange={setShowZeroPayments}
+              label={t('settings.showZeroPayments')}
             />
           </div>
         </div>
