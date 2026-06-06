@@ -3,7 +3,8 @@ import { db } from '@/db/db'
 
 export interface PaymentSummary {
   totalPaid: number
-  totalRemaining: number
+  remainingCoupons: number
+  remainingPrincipal: number
 }
 
 export function usePaymentSummary(instrumentId: number): PaymentSummary {
@@ -17,9 +18,13 @@ export function usePaymentSummary(instrumentId: number): PaymentSummary {
     .filter((p) => p.status === 'paid')
     .reduce((sum, p) => sum + (p.actualAmount ?? p.expectedAmount), 0)
 
-  const totalRemaining = payments
-    .filter((p) => p.status === 'scheduled')
+  const remainingCoupons = payments
+    .filter((p) => p.status === 'scheduled' && p.type === 'coupon')
     .reduce((sum, p) => sum + p.expectedAmount, 0)
 
-  return { totalPaid, totalRemaining }
+  const remainingPrincipal = payments
+    .filter((p) => p.status === 'scheduled' && p.type === 'redemption')
+    .reduce((sum, p) => sum + p.expectedAmount, 0)
+
+  return { totalPaid, remainingCoupons, remainingPrincipal }
 }
