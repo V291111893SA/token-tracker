@@ -1,7 +1,7 @@
 {
   "name": "tokens-tracker-scaffold",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.118",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -13,7 +13,9 @@
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
-    "prepare": "husky"
+    "prepare": "husky",
+    "version:patch": "npm version patch --no-git-tag-version",
+    "version:minor": "npm version minor --no-git-tag-version"
   },
   "dependencies": {
     "dexie": "^4.4.3",

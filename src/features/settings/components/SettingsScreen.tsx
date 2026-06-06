@@ -3,6 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '@/db/db'
 import { useTranslation } from 'react-i18next'
 import i18n from '@/app/i18n'
+import { APP_VERSION } from '@/app/version'
 import {
   Sun,
   Moon,
@@ -13,24 +14,52 @@ import {
   Upload,
   Eye,
   EyeOff,
+  ChevronDown,
 } from 'lucide-react'
-import type { Currency, Language, Theme } from '@/db/types'
+import type {
+  Currency,
+  Language,
+  Theme,
+  Instrument,
+  PurchaseLot,
+  PaymentRecord,
+  LedgerEntry,
+  ExchangeRate,
+  Settings,
+} from '@/db/types'
 import { useSettings } from '@/features/settings/hooks/useSettings'
 import { updateSettings } from '@/db/db'
-import { fetchAndCacheRates } from '@/services/exchangeRates/NBRBClient'
+import { loadDemoData } from '@/db/dbManager'
+import { setPresentationMode as setPresentationModeStorage } from '@/db/presentationModeStorage'
+import { refreshExchangeRatesIfNeeded } from '@/services/exchangeRates/NBRBClient'
 import { testConnection } from '@/services/llm/LLMService'
 import { exportBackup, importBackup, downloadJson } from '@/db/backup'
 import { Button } from '@/shared/components/Button'
 import { Input } from '@/shared/components/Input'
 import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
 import { Spinner } from '@/shared/components/Spinner'
+import { Toggle } from '@/shared/components/Toggle'
 import { useUIStore } from '@/store/uiStore'
 import { formatDate } from '@/shared/utils/format'
+import demoDataJson from '@/db/demo-data.json'
 
 export function SettingsScreen() {
   const { t } = useTranslation()
   const settings = useSettings()
-  const { theme, setTheme, language, setLanguage, baseCurrency, setBaseCurrency } = useUIStore()
+  const {
+    theme,
+    setTheme,
+    language,
+    setLanguage,
+    baseCurrency,
+    setBaseCurrency,
+    hideAmounts,
+    setHideAmounts,
+    showZeroPayments,
+    setShowZeroPayments,
+    presentationMode,
+    setPresentationMode,
+  } = useUIStore()
 
   // Exchange rates
   const [ratesLoading, setRatesLoading] = useState(false)
@@ -45,6 +74,24 @@ export function SettingsScreen() {
   const [llmSaving, setLlmSaving] = useState(false)
   const [llmTesting, setLlmTesting] = useState(false)
   const [llmTestResult, setLlmTestResult] = useState<'success' | 'error' | null>(null)
+  const [llmExpanded, setLlmExpanded] = useState(false)
+
+  // Presentation mode loading
+  const [presentationModeLoading, setPresentationModeLoading] = useState(false)
+
+  // Check for updates
+  const [checkingUpdates, setCheckingUpdates] = useState(false)
+
+  const handleCheckUpdates = async () => {
+    setCheckingUpdates(true)
+    try {
+      // Simply reload the page to check for updates and refresh the app
+      // Service Worker will update the cached files if available
+      window.location.reload()
+    } finally {
+      setCheckingUpdates(false)
+    }
+  }
 
   // Backup
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -53,12 +100,15 @@ export function SettingsScreen() {
   const [importError, setImportError] = useState<string | null>(null)
 
   // Initialize LLM fields from settings once when settings first load
+  // Note: presentationMode is NOT synced from settings because it's managed via localStorage only
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (settings) {
       setLlmBaseUrl(settings.llmBaseUrl ?? '')
       setLlmApiKey(settings.llmApiKey ?? '')
       setLlmModel(settings.llmModel ?? '')
+      setHideAmounts(settings.hideAmounts ?? false)
+      setShowZeroPayments(settings.showZeroPayments ?? false)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settings?.id])
@@ -68,8 +118,7 @@ export function SettingsScreen() {
     setRatesLoading(true)
     setRatesError(null)
     try {
-      await fetchAndCacheRates()
-      await updateSettings({ exchangeRatesUpdatedAt: new Date().toISOString() })
+      await refreshExchangeRatesIfNeeded()
     } catch (e) {
       setRatesError(e instanceof Error ? e.message : String(e))
     } finally {
@@ -155,7 +204,7 @@ export function SettingsScreen() {
 
   const languageOptions: { value: Language; label: string }[] = [
     { value: 'ru', label: 'Русский' },
-    { value: 'be', label: 'Беларуская' },
+    { value: 'by', label: 'Беларуская' },
   ]
 
   const currencyOptions: { value: Currency; label: string }[] = [
@@ -187,14 +236,14 @@ export function SettingsScreen() {
                 <button
                   key={opt.value}
                   onClick={() => setTheme(opt.value)}
-                  className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium transition-colors ${
+                  className={`flex items-center justify-center gap-0 px-3 py-2 text-sm font-medium transition-colors md:gap-1.5 md:px-4 ${
                     theme === opt.value
                       ? 'bg-indigo-600 text-white'
                       : 'bg-white text-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700'
                   }`}
                 >
                   {opt.icon}
-                  {opt.label}
+                  <span className="hidden md:inline">{opt.label}</span>
                 </button>
               ))}
             </div>
@@ -243,6 +292,97 @@ export function SettingsScreen() {
               ))}
             </div>
           </div>
+
+          {/* Hide Amounts */}
+          <div>
+            <Toggle
+              checked={hideAmounts}
+              onChange={setHideAmounts}
+              label={t('settings.hideAmounts')}
+            />
+          </div>
+
+          {/* Show Zero Payments */}
+          <div>
+            <Toggle
+              checked={showZeroPayments}
+              onChange={setShowZeroPayments}
+              label={t('settings.showZeroPayments')}
+            />
+          </div>
+
+          {/* App Version & Updates */}
+          <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20">
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {t('settings.appVersion')}
+              </p>
+              <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">
+                {APP_VERSION}
+              </span>
+            </div>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleCheckUpdates}
+              disabled={checkingUpdates}
+              className="w-full"
+            >
+              {checkingUpdates ? (
+                <>
+                  <Spinner className="mr-2 size-4" />
+                  {t('settings.checkingUpdates')}
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="mr-2 size-4" />
+                  {t('settings.checkUpdates')}
+                </>
+              )}
+            </Button>
+            <p className="mt-2 text-xs text-gray-600 dark:text-gray-400">
+              {t('settings.updateInfo')}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Backup section */}
+      <div className="mb-4 rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-900">
+        <h2 className="mb-4 text-base font-semibold text-gray-900 dark:text-gray-100">
+          {t('settings.backup')}
+        </h2>
+
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={<Download className="size-4" />}
+              onClick={() => void handleExport()}
+            >
+              {t('settings.exportBackup')}
+            </Button>
+
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={<Upload className="size-4" />}
+              onClick={handleImportClick}
+            >
+              {t('settings.importBackup')}
+            </Button>
+          </div>
+
+          {importError && <p className="text-xs text-red-500 dark:text-red-400">{importError}</p>}
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json"
+            className="hidden"
+            onChange={handleFileChange}
+          />
         </div>
       </div>
 
@@ -285,7 +425,8 @@ export function SettingsScreen() {
               loading={ratesLoading}
               onClick={() => void handleRefreshRates()}
             >
-              {t('settings.refreshRates')}
+              <span className="md:hidden">{t('settings.refreshRatesShort')}</span>
+              <span className="hidden md:inline">{t('settings.refreshRates')}</span>
             </Button>
             {settings?.exchangeRatesUpdatedAt && (
               <span className="text-xs text-gray-500 dark:text-gray-400">
@@ -300,117 +441,145 @@ export function SettingsScreen() {
 
       {/* LLM Integration section */}
       <div className="mb-4 rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-900">
-        <h2 className="mb-4 text-base font-semibold text-gray-900 dark:text-gray-100">
-          {t('settings.llm')}
-        </h2>
-
-        <div className="flex flex-col gap-4">
-          <Input
-            label={t('settings.llmBaseUrl')}
-            placeholder="https://api.openai.com/v1"
-            value={llmBaseUrl}
-            onChange={(e) => setLlmBaseUrl(e.target.value)}
+        <button
+          onClick={() => setLlmExpanded(!llmExpanded)}
+          className="mb-4 flex w-full items-center justify-between text-left transition-colors hover:text-indigo-600 dark:hover:text-indigo-400"
+        >
+          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">
+            {t('settings.llm')}
+          </h2>
+          <ChevronDown
+            className={`size-5 text-gray-600 transition-transform dark:text-gray-400 ${
+              llmExpanded ? 'rotate-180' : ''
+            }`}
           />
+        </button>
 
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              {t('settings.llmApiKey')}
-            </label>
-            <div className="relative">
-              <input
-                type={llmKeyVisible ? 'text' : 'password'}
-                value={llmApiKey}
-                onChange={(e) => setLlmApiKey(e.target.value)}
-                placeholder="sk-..."
-                className="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 pr-10 text-sm text-gray-900 placeholder-gray-400 focus:border-transparent focus:ring-2 focus:ring-indigo-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
-              />
-              <button
-                type="button"
-                onClick={() => setLlmKeyVisible((v) => !v)}
-                className="absolute top-1/2 right-2.5 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+        {llmExpanded && (
+          <div className="flex flex-col gap-4">
+            <Input
+              label={t('settings.llmBaseUrl')}
+              placeholder="https://api.openai.com/v1"
+              value={llmBaseUrl}
+              onChange={(e) => setLlmBaseUrl(e.target.value)}
+            />
+
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {t('settings.llmApiKey')}
+              </label>
+              <div className="relative">
+                <input
+                  type={llmKeyVisible ? 'text' : 'password'}
+                  value={llmApiKey}
+                  onChange={(e) => setLlmApiKey(e.target.value)}
+                  placeholder="sk-..."
+                  className="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 pr-10 text-sm text-gray-900 placeholder-gray-400 focus:border-transparent focus:ring-2 focus:ring-indigo-500 focus:outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => setLlmKeyVisible((v) => !v)}
+                  className="absolute top-1/2 right-2.5 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                >
+                  {llmKeyVisible ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                </button>
+              </div>
+            </div>
+
+            <Input
+              label={t('settings.llmModel')}
+              placeholder="gpt-4o-mini"
+              value={llmModel}
+              onChange={(e) => setLlmModel(e.target.value)}
+            />
+
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                variant="primary"
+                size="sm"
+                loading={llmSaving}
+                onClick={() => void handleSaveLlm()}
               >
-                {llmKeyVisible ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-              </button>
+                {t('common.save')}
+              </Button>
+
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={llmTesting ? <Spinner className="size-4" /> : <Sparkles className="size-4" />}
+                loading={llmTesting}
+                onClick={() => void handleTestLlm()}
+              >
+                {t('settings.llmTest')}
+              </Button>
+
+              {llmTestResult === 'success' && (
+                <span className="text-sm text-green-600 dark:text-green-400">
+                  {t('settings.llmTestSuccess')}
+                </span>
+              )}
+              {llmTestResult === 'error' && (
+                <span className="text-sm text-red-600 dark:text-red-400">
+                  {t('settings.llmTestFail')}
+                </span>
+              )}
             </div>
           </div>
-
-          <Input
-            label={t('settings.llmModel')}
-            placeholder="gpt-4o-mini"
-            value={llmModel}
-            onChange={(e) => setLlmModel(e.target.value)}
-          />
-
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              variant="primary"
-              size="sm"
-              loading={llmSaving}
-              onClick={() => void handleSaveLlm()}
-            >
-              {t('common.save')}
-            </Button>
-
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={llmTesting ? <Spinner className="size-4" /> : <Sparkles className="size-4" />}
-              loading={llmTesting}
-              onClick={() => void handleTestLlm()}
-            >
-              {t('settings.llmTest')}
-            </Button>
-
-            {llmTestResult === 'success' && (
-              <span className="text-sm text-green-600 dark:text-green-400">
-                {t('settings.llmTestSuccess')}
-              </span>
-            )}
-            {llmTestResult === 'error' && (
-              <span className="text-sm text-red-600 dark:text-red-400">
-                {t('settings.llmTestFail')}
-              </span>
-            )}
-          </div>
-        </div>
+        )}
       </div>
 
-      {/* Backup section */}
-      <div className="mb-4 rounded-xl border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-900">
-        <h2 className="mb-4 text-base font-semibold text-gray-900 dark:text-gray-100">
-          {t('settings.backup')}
+      {/* Presentation Mode section */}
+      <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-5 dark:border-amber-800 dark:bg-amber-900/20">
+        <h2 className="mb-4 text-base font-semibold text-amber-900 dark:text-amber-100">
+          {t('settings.presentationMode')}
         </h2>
 
         <div className="flex flex-col gap-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={<Download className="size-4" />}
-              onClick={() => void handleExport()}
-            >
-              {t('settings.exportBackup')}
-            </Button>
-
-            <Button
-              variant="secondary"
-              size="sm"
-              icon={<Upload className="size-4" />}
-              onClick={handleImportClick}
-            >
-              {t('settings.importBackup')}
-            </Button>
+          <div className="flex items-center gap-3">
+            <Toggle
+              checked={presentationMode}
+              onChange={async (enabled) => {
+                if (presentationModeLoading) return
+                setPresentationModeLoading(true)
+                try {
+                  if (enabled) {
+                    // Load demo data into demoDb
+                    const demoData = demoDataJson as unknown as {
+                      data: {
+                        instruments?: Instrument[]
+                        purchaseLots?: PurchaseLot[]
+                        paymentRecords?: PaymentRecord[]
+                        ledgerEntries?: LedgerEntry[]
+                        exchangeRates?: ExchangeRate[]
+                        settings?: Settings[]
+                      }
+                    }
+                    await loadDemoData({
+                      instruments: demoData.data.instruments || [],
+                      purchaseLots: demoData.data.purchaseLots || [],
+                      paymentRecords: demoData.data.paymentRecords || [],
+                      ledgerEntries: demoData.data.ledgerEntries || [],
+                      exchangeRates: demoData.data.exchangeRates || [],
+                      settings: demoData.data.settings,
+                    })
+                  }
+                  // Save flag to localStorage
+                  setPresentationModeStorage(enabled)
+                  setPresentationMode(enabled)
+                  // Reload page
+                  await new Promise((resolve) => setTimeout(resolve, 500))
+                  window.location.reload()
+                } finally {
+                  setPresentationModeLoading(false)
+                }
+              }}
+              label={t('settings.presentationMode')}
+            />
+            {presentationModeLoading && <Spinner className="size-4" />}
           </div>
-
-          {importError && <p className="text-xs text-red-500 dark:text-red-400">{importError}</p>}
-
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".json"
-            className="hidden"
-            onChange={handleFileChange}
-          />
+          <p className="text-xs text-amber-700 dark:text-amber-300">
+            {t('settings.presentationModeDesc')}
+          </p>
         </div>
       </div>
 

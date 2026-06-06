@@ -7,6 +7,8 @@ import {
   ShoppingCart,
   TrendingUp,
   BookOpen,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react'
 import type { Currency, LedgerEntryType } from '@/db/types'
 import { useLedgerEntries } from '@/features/ledger/hooks/useLedgerEntries'
@@ -34,6 +36,8 @@ const typeBadgeVariant: Record<LedgerEntryType, 'blue' | 'green' | 'gray' | 'yel
   sale: 'green',
 }
 
+const PAGE_SIZE = 10
+
 function exportToCsv(entries: ReturnType<typeof useLedgerEntries>, baseCurrency: Currency): void {
   const header = ['Date', 'Type', 'Instrument', 'Amount']
   const rows = entries.map((e) => [
@@ -57,8 +61,12 @@ export function LedgerScreen() {
   const { baseCurrency } = useUIStore()
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<LedgerEntryType | ''>('')
+  const [page, setPage] = useState(0)
 
   const entries = useLedgerEntries(filter || undefined, search)
+
+  const totalPages = Math.ceil(entries.length / PAGE_SIZE)
+  const displayed = entries.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
 
   const selectOptions = [
     { value: '', label: t('common.filter') + ': Все' },
@@ -101,7 +109,7 @@ export function LedgerScreen() {
         <>
           {/* Mobile card layout */}
           <div className="flex flex-col gap-2 lg:hidden">
-            {entries.map((entry) => (
+            {displayed.map((entry) => (
               <div
                 key={entry.id}
                 className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900"
@@ -160,7 +168,7 @@ export function LedgerScreen() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                {entries.map((entry) => (
+                {displayed.map((entry) => (
                   <tr
                     key={entry.id}
                     className="bg-white transition-colors hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800/50"
@@ -193,6 +201,32 @@ export function LedgerScreen() {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="mt-4 flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
+              <span>
+                {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, entries.length)} /{' '}
+                {entries.length}
+              </span>
+              <div className="flex gap-1">
+                <button
+                  disabled={page === 0}
+                  onClick={() => setPage((p) => p - 1)}
+                  className="rounded-lg p-1.5 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-30 dark:hover:bg-gray-800"
+                >
+                  <ChevronLeft className="size-4" />
+                </button>
+                <button
+                  disabled={page >= totalPages - 1}
+                  onClick={() => setPage((p) => p + 1)}
+                  className="rounded-lg p-1.5 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-30 dark:hover:bg-gray-800"
+                >
+                  <ChevronRight className="size-4" />
+                </button>
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>

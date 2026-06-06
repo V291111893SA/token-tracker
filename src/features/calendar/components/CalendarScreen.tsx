@@ -6,11 +6,12 @@ import { useUIStore } from '@/store/uiStore'
 import { Button } from '@/shared/components/Button'
 import { Badge } from '@/shared/components/Badge'
 import { Modal } from '@/shared/components/Modal'
-import { formatCurrency, formatDateRange } from '@/shared/utils/format'
+import { formatCurrency, formatDateRange, formatMonthYear } from '@/shared/utils/format'
 import { db } from '@/db/db'
 import {
   useCalendarPayments,
   type CalendarPaymentEntry,
+  type DayPaymentsMap,
 } from '@/features/calendar/hooks/useCalendarPayments'
 import type { Currency, PaymentStatus } from '@/db/types'
 
@@ -56,11 +57,9 @@ interface DayModalProps {
 
 function DayModal({ day, year, month, entries, onClose }: DayModalProps) {
   const { t } = useTranslation()
-  const dateStr = new Date(year, month, day).toLocaleDateString('ru-BY', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  })
+  const { t: tFormat } = useTranslation()
+  const monthName = tFormat(`months.long.${month}`)
+  const dateStr = `${day} ${monthName} ${year}`
 
   return (
     <Modal open onClose={onClose} title={dateStr}>
@@ -119,7 +118,7 @@ function DayModal({ day, year, month, entries, onClose }: DayModalProps) {
 
 export default function CalendarScreen() {
   const { t } = useTranslation()
-  const { baseCurrency } = useUIStore()
+  const { baseCurrency, showZeroPayments } = useUIStore()
 
   const today = new Date()
   const [year, setYear] = useState(today.getFullYear())
@@ -127,7 +126,21 @@ export default function CalendarScreen() {
   const [selectedDay, setSelectedDay] = useState<number | null>(null)
   const [displayCurrency, setDisplayCurrency] = useState<Currency>(baseCurrency)
 
-  const dayPaymentsMap = useCalendarPayments(year, month)
+  const rawDayPaymentsMap = useCalendarPayments(year, month)
+
+  // Filter out zero payments if showZeroPayments is false
+  const dayPaymentsMap: DayPaymentsMap = showZeroPayments
+    ? rawDayPaymentsMap
+    : (() => {
+        const filtered = new Map<number, CalendarPaymentEntry[]>()
+        for (const [day, entries] of rawDayPaymentsMap) {
+          const nonZeroEntries = entries.filter((e) => e.payment.expectedAmount > 0)
+          if (nonZeroEntries.length > 0) {
+            filtered.set(day, nonZeroEntries)
+          }
+        }
+        return filtered
+      })()
 
   const exchangeRates = useLiveQuery(() => db.exchangeRates.toArray(), [], [])
   const rateMap = new Map<Currency, number>()
@@ -154,10 +167,7 @@ export default function CalendarScreen() {
     setSelectedDay(null)
   }
 
-  const monthLabel = new Date(year, month, 1).toLocaleDateString('ru-BY', {
-    month: 'long',
-    year: 'numeric',
-  })
+  const monthLabel = formatMonthYear(new Date(year, month, 1))
 
   const firstWeekday = (new Date(year, month, 1).getDay() + 6) % 7
   const daysInMonth = new Date(year, month + 1, 0).getDate()

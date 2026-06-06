@@ -17,6 +17,7 @@ import { Modal } from '@/shared/components/Modal'
 import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
 import { Spinner } from '@/shared/components/Spinner'
 import { useInstrument } from '@/features/instruments/hooks/useInstruments'
+import { usePaymentSummary } from '@/features/instruments/hooks/usePaymentSummary'
 import { PurchaseLotList } from '@/features/purchaseLots/components/PurchaseLotList'
 import { PaymentList } from '@/features/payments/components/PaymentList'
 import { db } from '@/db/db'
@@ -65,6 +66,8 @@ export default function InstrumentDetailScreen() {
   const [maturedPayments, setMaturedPayments] = useState<PaymentRecord[]>([])
   const [defaultModalOpen, setDefaultModalOpen] = useState(false)
   const [defaultForm, setDefaultForm] = useState<DefaultFormState>(emptyDefaultForm)
+  const [soldConfirmOpen, setSoldConfirmOpen] = useState(false)
+  const paymentSummary = usePaymentSummary(instrumentId ?? 0)
 
   if (instrument === null) {
     // still loading
@@ -139,6 +142,7 @@ export default function InstrumentDetailScreen() {
     if (instrument?.id == null) return
     const now = new Date().toISOString()
     await db.instruments.update(instrument.id, { status: 'sold', updatedAt: now })
+    setSoldConfirmOpen(false)
   }
 
   async function handleMarkDefaulted() {
@@ -245,7 +249,7 @@ export default function InstrumentDetailScreen() {
               variant="secondary"
               size="sm"
               icon={<TrendingUp className="size-4" />}
-              onClick={handleMarkSold}
+              onClick={() => setSoldConfirmOpen(true)}
             >
               {t('instrument.markSold')}
             </Button>
@@ -368,6 +372,28 @@ export default function InstrumentDetailScreen() {
         )}
       </div>
 
+      {/* Payment summary metrics */}
+      <div className="mb-6 grid grid-cols-2 gap-3">
+        <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
+          <p className="text-xs text-gray-500 dark:text-gray-400">{t('payment.totalPaid')}</p>
+          <p className="mt-1 text-lg font-semibold text-gray-900 tabular-nums dark:text-gray-100">
+            {formatCurrency(paymentSummary.totalPaid, instrument.currency)}
+          </p>
+        </div>
+        <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
+          <p className="text-xs text-gray-500 dark:text-gray-400">{t('payment.totalRemaining')}</p>
+          <p className="mt-1 text-lg font-semibold text-gray-900 tabular-nums dark:text-gray-100">
+            {formatCurrency(paymentSummary.remainingCoupons, instrument.currency)}
+          </p>
+          <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+            <span className="text-gray-400">+</span>{' '}
+            <span className="font-medium text-gray-700 dark:text-gray-300">
+              {formatCurrency(paymentSummary.remainingPrincipal, instrument.currency)}
+            </span>
+          </p>
+        </div>
+      </div>
+
       {/* Payments */}
       <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
         <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
@@ -418,6 +444,15 @@ export default function InstrumentDetailScreen() {
           )}
         </div>
       </Modal>
+
+      {/* Sold confirm */}
+      <ConfirmDialog
+        open={soldConfirmOpen}
+        title={t('instrument.markSold')}
+        message={t('instrument.markSoldConfirm', { name: instrument.name })}
+        onConfirm={() => void handleMarkSold()}
+        onCancel={() => setSoldConfirmOpen(false)}
+      />
 
       {/* Delete confirm */}
       <ConfirmDialog
