@@ -32,7 +32,7 @@ export function CurrencyDisplay({
           title="Нажмите, чтобы показать все суммы на 10 сек"
         >
           <span>{shouldHide ? '****' : numberPart}</span>
-          {!shouldHide && <i className="nbrb-icon text-sm">BYN</i>}
+          {!shouldHide && <i className="nbrb-icon" />}
         </button>
       )
     }
